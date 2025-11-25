@@ -5,10 +5,13 @@ import re
 import yaml
 from dataclasses import dataclass, asdict
 from typing import List, Tuple
+from openai import OpenAI
 
 from dotenv import load_dotenv
 
 # ------------------- Config & setup -------------------
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
