@@ -56,7 +56,7 @@ def upsert_document_to_vector_store(doc: WikiDocument):
 
     upload_result = client.files.create(
         file=(upload_name, file_bytes),
-        purpose="file_search",
+        purpose="assistants",  # required for files destined for vector stores
     )
 
     file_id = upload_result.id
