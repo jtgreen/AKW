@@ -1,0 +1,6 @@
+wiki_repo_root: "/opt/bsos-wiki-data/repo"
+
+openai:
+  # placeholder: we’ll fill these later when you create them via API or console
+  vector_store_name: "bsos-wiki-store"
+  assistant_name: "bsos-wiki-assistant"

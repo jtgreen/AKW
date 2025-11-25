@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtualenv
+.venv/
+
+# Environment / secrets
+.env
+
+# Editor junk
+*.swp
+*.swo
+.DS_Store
