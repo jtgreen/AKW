@@ -4,6 +4,7 @@ __pycache__/
 
 # Virtualenv
 .venv/
+.venv_tmp/
 
 # Environment / secrets
 .env

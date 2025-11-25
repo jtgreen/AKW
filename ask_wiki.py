@@ -32,12 +32,12 @@ def ask_wiki(query: str):
     resp = client.responses.create(
         model="gpt-4.1-mini",  # or gpt-4.1 / gpt-5.1 depending on access
         input=[{"role": "user", "content": query}],
-        tools=[{"type": "file_search"}],
-        extra_body={
-            "tool_resources": {
-                "file_search": {"vector_store_ids": [VECTOR_STORE_ID]}
+        tools=[
+            {
+                "type": "file_search",
+                "vector_store_ids": [VECTOR_STORE_ID],
             }
-        },
+        ],
     )
 
     # Print the answer text
