@@ -20,6 +20,32 @@ REPO_ROOT = Path(CONFIG["wiki_repo_root"])
 
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
+def build_document(md_path: Path, fm: dict, body: str) -> dict:
+    rel = md_path.relative_to(REPO_ROOT).with_suffix("")
+    # Prefer explicit path in front matter if present, otherwise derive from filesystem
+    wiki_path = fm.get("path") or rel.as_posix()
+
+    title = fm.get("title", rel.name)
+    tags_raw = fm.get("tags", "") or ""
+    if isinstance(tags_raw, str):
+        tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
+    else:
+        tags = list(tags_raw)
+
+    metadata = {
+        "kind": "wiki",
+        "wiki_path": wiki_path,
+        "wiki_url": f"https://bsos.wiki/{wiki_path}",
+        "title": title,
+        "tags": tags,
+        "year": fm.get("year"),
+        "source_type": fm.get("source_type", "page"),
+    }
+
+    # Content to index: front matter-derived title + body
+    text_for_index = f"# {title}\n\n{body}"
+
+    return {"metadata": metadata, "content": text_for_index}
 
 def parse_front_matter(md_text: str):
     """
@@ -68,4 +94,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
