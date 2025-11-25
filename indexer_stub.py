@@ -43,18 +43,35 @@ class WikiDocument:
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
-    Upload a wiki document to the OpenAI vector store.
+    Correct OpenAI vector-store ingestion:
+      1) Upload file
+      2) Attach via batch with metadata
     """
+
     if VECTOR_STORE_ID == "vs_TBD":
         raise RuntimeError("Vector store ID not set in config.yaml")
 
-    # Construct a temporary file payload in memory
-    # (OpenAI will handle chunking / embeddings automatically)
-    contents = doc.content
+    # -----------------------------
+    # STEP 1: Upload the file
+    # -----------------------------
+    upload_name = f"{doc.path.replace('/', '_')}.md"
+    print(f"Uploading raw file to OpenAI: {upload_name}")
 
-    # Metadata passed with file
+    upload_result = client.files.create(
+        file={
+            "name": upload_name,
+            "contents": doc.content.encode("utf-8")
+        },
+        purpose="file_search"    # REQUIRED
+    )
+
+    file_id = upload_result.id
+
+    # -----------------------------
+    # STEP 2: Attach file to vector store with metadata
+    # -----------------------------
     metadata = {
-        "kind": "wiki",            # later: also "pdf"
+        "kind": "wiki",
         "wiki_path": doc.path,
         "wiki_url": doc.url,
         "title": doc.title,
@@ -63,19 +80,15 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         "source_type": doc.source_type,
     }
 
-    print(f"Uploading: {doc.title} -> vector store {VECTOR_STORE_ID}")
+    print(f"Attaching file {file_id} to vector store {VECTOR_STORE_ID} with metadata...")
 
-    # Call the new File Search API
-    result = client.vector_stores.files.upload(
+    batch = client.vector_stores.file_batches.create(
         vector_store_id=VECTOR_STORE_ID,
-        file={
-            "name": f"{doc.path.replace('/', '_')}.md",
-            "contents": contents.encode("utf-8"),
-        },
-        metadata=metadata,
+        file_ids=[file_id],
+        metadata=metadata
     )
 
-    print("Uploaded:", result.id)
+    print("Batch created:", batch.id)
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
