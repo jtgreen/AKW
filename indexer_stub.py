@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -24,6 +26,7 @@ CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 REPO_ROOT = Path(CONFIG["wiki_repo_root"])
 OPENAI_CFG = CONFIG.get("openai", {})
 VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
+STATE_PATH = ROOT / ".indexer_state.json"
 
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
@@ -43,23 +46,12 @@ class WikiDocument:
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
-    Upload a wiki document to the OpenAI vector store using the
-    file upload + batch attach workflow.
+    Upload a wiki document to the OpenAI vector store.
+    Prefers the new single-call API, but falls back to the legacy
+    upload + batch attach flow when running on older SDK versions.
     """
     if VECTOR_STORE_ID == "vs_TBD":
         raise RuntimeError("Vector store ID not set in config.yaml")
-
-    upload_name = f"{doc.path.replace('/', '_')}.md"
-    file_bytes = doc.content.encode("utf-8")
-
-    print(f"Uploading raw file to OpenAI: {upload_name}")
-
-    upload_result = client.files.create(
-        file=(upload_name, file_bytes),
-        purpose="assistants",  # required for files destined for vector stores
-    )
-
-    file_id = upload_result.id
 
     metadata = {
         "kind": "wiki",
@@ -71,15 +63,69 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         "source_type": doc.source_type,
     }
 
-    print(f"Attaching file {file_id} to vector store {VECTOR_STORE_ID}")
+    file_name = f"{doc.path.replace('/', '_')}.md"
+    file_bytes = doc.content.encode("utf-8")
 
-    batch = client.vector_stores.file_batches.create(
-        vector_store_id=VECTOR_STORE_ID,
-        file_ids=[file_id],
-        metadata=metadata,
+    # Preferred path: new vector store upload helper
+    try:
+        print(f"Uploading via vector store API: {file_name}")
+        result = client.vector_stores.files.upload(
+            vector_store_id=VECTOR_STORE_ID,
+            file={
+                "name": file_name,
+                "contents": file_bytes,
+            },
+            metadata=metadata,
+        )
+        print("Uploaded:", result.id)
+        return
+    except (AttributeError, TypeError):
+        print("vector_stores.files.upload unavailable; falling back to legacy upload.")
+
+    # Fallback: upload file, then batch-attach
+    upload_result = client.files.create(
+        file=(file_name, file_bytes),
+        purpose="assistants",
     )
+    file_id = upload_result.id
+    print(f"Uploaded raw file to OpenAI: {file_name} (file_id={file_id})")
+
+    batch_kwargs = {
+        "vector_store_id": VECTOR_STORE_ID,
+        "file_ids": [file_id],
+    }
+
+    try:
+        batch = client.vector_stores.file_batches.create(
+            **batch_kwargs,
+            metadata=metadata,
+        )
+    except TypeError:
+        print("File batch metadata unsupported; attaching without metadata.")
+        batch = client.vector_stores.file_batches.create(**batch_kwargs)
 
     print("Batch created:", batch.id)
+
+
+def compute_document_hash(doc: WikiDocument) -> str:
+    """Return a stable hash of the document content for change detection."""
+    hasher = hashlib.sha256()
+    hasher.update(doc.content.encode("utf-8"))
+    return hasher.hexdigest()
+
+
+def load_index_state() -> dict:
+    if not STATE_PATH.exists():
+        return {}
+    try:
+        return json.loads(STATE_PATH.read_text())
+    except json.JSONDecodeError:
+        print("State file is corrupted; starting fresh.")
+        return {}
+
+
+def save_index_state(state: dict) -> None:
+    STATE_PATH.write_text(json.dumps(state, indent=2, sort_keys=True))
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
@@ -169,16 +215,29 @@ def main():
     if not REPO_ROOT.exists():
         raise SystemExit("Repo root does not exist!")
 
-    count = 0
+    state = load_index_state()
+    total = 0
+    uploaded = 0
     for md_path in walk_markdown_files():
         doc = build_document(md_path)
         if doc is None:
             continue
 
-        upsert_document_to_vector_store(doc)
-        count += 1
+        doc_hash = compute_document_hash(doc)
+        if state.get(doc.path) == doc_hash:
+            print(f"Skipping unchanged: {doc.title}")
+            total += 1
+            continue
 
-    print(f"\nCompleted uploading {count} files into vector store.")
+        upsert_document_to_vector_store(doc)
+        state[doc.path] = doc_hash
+        uploaded += 1
+        total += 1
+
+    if uploaded:
+        save_index_state(state)
+
+    print(f"\nCompleted run. Uploaded {uploaded} files (processed {total} total).")
 
 
 if __name__ == "__main__":
