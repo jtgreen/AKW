@@ -43,12 +43,35 @@ class WikiDocument:
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
-    Upload a wiki document to the OpenAI vector store.
+    Upload a wiki document to the OpenAI vector store, using the
+    correct 2-step pattern:
+      1) upload file
+      2) attach to vector store with metadata via file batch
     """
     if VECTOR_STORE_ID == "vs_TBD":
         raise RuntimeError("Vector store ID not set in config.yaml")
 
+    # -----------------------------
+    # STEP 1: Upload the file
+    # -----------------------------
     contents = doc.content
+    upload_name = f"{doc.path.replace('/', '_')}.md"
+
+    print(f"Uploading raw file to OpenAI: {upload_name}")
+
+    upload_result = client.files.create(
+        file={
+            "name": upload_name,
+            "contents": contents.encode("utf-8"),
+        },
+        purpose="file_search",
+    )
+
+    file_id = upload_result.id
+
+    # -----------------------------
+    # STEP 2: Attach file to vector store with metadata
+    # -----------------------------
     metadata = {
         "kind": "wiki",
         "wiki_path": doc.path,
@@ -59,18 +82,15 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         "source_type": doc.source_type,
     }
 
-    print(f"Uploading: {doc.title} -> vector store {VECTOR_STORE_ID}")
+    print(f"Attaching file {file_id} to vector store {VECTOR_STORE_ID} with metadata...")
 
-    result = client.vector_stores.files.upload(
+    batch = client.vector_stores.file_batches.create(
         vector_store_id=VECTOR_STORE_ID,
-        file={
-            "name": f"{doc.path.replace('/', '_')}.md",
-            "contents": contents.encode("utf-8"),
-        },
+        file_ids=[file_id],
         metadata=metadata,
     )
 
-    print("Uploaded:", result.id)
+    print("Batch created:", batch.id)
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
