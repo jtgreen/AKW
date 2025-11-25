@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BSOS Wiki Assistant</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #080b12;
+      color: #eef2ff;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .app {
+      width: min(900px, 100%);
+      background: rgba(20, 25, 37, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+      padding: 2rem;
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      letter-spacing: 0.02em;
+    }
+
+    p.subtitle {
+      margin: 0 0 1.5rem;
+      color: #94a3b8;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: rgba(13, 17, 23, 0.7);
+      color: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 1rem;
+      resize: vertical;
+    }
+
+    button {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 0.85rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .status {
+      min-height: 1.5rem;
+      font-size: 0.95rem;
+      color: #93c5fd;
+    }
+
+    .card {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background: rgba(8, 11, 18, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sources {
+      margin-top: 1.25rem;
+    }
+
+    .source-item {
+      border-left: 3px solid #38bdf8;
+      padding-left: 0.75rem;
+      margin-bottom: 0.75rem;
+      color: #cbd5f5;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 1.5rem;
+      }
+      textarea {
+        min-height: 160px;
+      }
+      button {
+        align-self: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>BSOS Wiki Assistant</h1>
+    <p class="subtitle">
+      NotebookLM-style reasoning over your hemorrhagic shock knowledge base.
+    </p>
+
+    <form id="ask-form">
+      <label for="query" style="font-weight:600;">Ask a question</label>
+      <textarea
+        id="query"
+        name="query"
+        placeholder="e.g. Summarize the cardiac mechanism of irreversible hemorrhagic shock."
+        required
+      ></textarea>
+      <button type="submit">Ask</button>
+      <div class="status" id="status"></div>
+    </form>
+
+    <div class="card" id="answer-card" style="display:none;">
+      <h2>Answer</h2>
+      <div id="answer-text"></div>
+      <div class="sources" id="sources"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("ask-form");
+    const queryInput = document.getElementById("query");
+    const statusEl = document.getElementById("status");
+    const answerCard = document.getElementById("answer-card");
+    const answerText = document.getElementById("answer-text");
+    const sourcesEl = document.getElementById("sources");
+    const button = form.querySelector("button");
+
+    async function askWiki(query) {
+      const response = await fetch("./api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || response.statusText);
+      }
+      return response.json();
+    }
+
+    form.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      const query = queryInput.value.trim();
+      if (!query) {
+        statusEl.textContent = "Enter a question first.";
+        return;
+      }
+
+      button.disabled = true;
+      statusEl.textContent = "Thinking...";
+      answerCard.style.display = "none";
+
+      try {
+        const data = await askWiki(query);
+        answerText.textContent = data.answer?.trim() || "No answer returned.";
+
+        sourcesEl.innerHTML = "";
+        if (Array.isArray(data.sources) && data.sources.length) {
+          const frag = document.createDocumentFragment();
+          data.sources.forEach((source, idx) => {
+            const div = document.createElement("div");
+            div.className = "source-item";
+            div.textContent = source.snippet || `Source ${idx + 1}`;
+            frag.appendChild(div);
+          });
+          sourcesEl.appendChild(frag);
+        }
+
+        answerCard.style.display = "block";
+        statusEl.textContent = "Done.";
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = `Error: ${err.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
