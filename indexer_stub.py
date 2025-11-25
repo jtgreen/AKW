@@ -26,7 +26,6 @@ VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
 
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
-
 @dataclass
 class WikiDocument:
     """Logical document ready to be sent to OpenAI vector store."""
@@ -40,6 +39,42 @@ class WikiDocument:
 
 
 # ------------------- Helpers -------------------
+
+def upsert_document_to_vector_store(doc: WikiDocument):
+    """
+    Upload a wiki document to the OpenAI vector store.
+    """
+    if VECTOR_STORE_ID == "vs_TBD":
+        raise RuntimeError("Vector store ID not set in config.yaml")
+
+    # Construct a temporary file payload in memory
+    # (OpenAI will handle chunking / embeddings automatically)
+    contents = doc.content
+
+    # Metadata passed with file
+    metadata = {
+        "kind": "wiki",            # later: also "pdf"
+        "wiki_path": doc.path,
+        "wiki_url": doc.url,
+        "title": doc.title,
+        "tags": doc.tags,
+        "year": doc.year,
+        "source_type": doc.source_type,
+    }
+
+    print(f"Uploading: {doc.title} -> vector store {VECTOR_STORE_ID}")
+
+    # Call the new File Search API
+    result = client.vector_stores.files.upload(
+        vector_store_id=VECTOR_STORE_ID,
+        file={
+            "name": f"{doc.path.replace('/', '_')}.md",
+            "contents": contents.encode("utf-8"),
+        },
+        metadata=metadata,
+    )
+
+    print("Uploaded:", result.id)
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
@@ -141,6 +176,8 @@ def main():
         print(f"  tags: {doc.tags}")
         print("  content preview:", repr(doc.content[:120]), "...\n")
 
+        upsert_document_to_vector_store(doc)
+        count += 1
     print(f"Scanned {count} markdown files.")
 
 
