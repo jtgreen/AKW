@@ -4,3 +4,4 @@ openai:
   # placeholder: we’ll fill these later when you create them via API or console
   vector_store_name: "bsos-wiki-store"
   assistant_name: "bsos-wiki-assistant"
+  vector_store_id: "vs_XXXXXXXXXXXX"   # to be filled in once you create it
