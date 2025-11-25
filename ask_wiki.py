@@ -16,22 +16,24 @@ ROOT = Path(__file__).resolve().parent
 CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
 VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
 
+SYSTEM_PROMPT = """You are the BSOS Wiki Assistant.
+
+You answer questions using ONLY the attached wiki documents (markdown pages from https://bsos.wiki).
+When responding:
+- Synthesize concisely but with enough technical detail for a physician / scientist.
+- If you reference a specific page, quote or paraphrase a sentence or two and include the page URL if it appears in the text.
+- If you are unsure or the answer is not clearly present, say so explicitly.
+"""
+
 def ask_wiki(query: str):
-    """
-    Ask a question against the bsos-wiki vector store using File Search.
-    Uses the new Responses API-style pattern.
-    """
     print(f"Query: {query}\n")
 
-    # NOTE: signatures may vary slightly by openai version,
-    # but conceptually this is:
-    #  - model: LLM
-    #  - input: your query
-    #  - tools: file_search
-    #  - file_search: vector store(s) to search
     resp = client.responses.create(
-        model="gpt-4.1-mini",  # or gpt-4.1 / gpt-5.1 depending on access
-        input=[{"role": "user", "content": query}],
+        model="gpt-4.1-mini",
+        input=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": query},
+        ],
         tools=[
             {
                 "type": "file_search",
@@ -40,9 +42,27 @@ def ask_wiki(query: str):
         ],
     )
 
-    # Print the answer text
-    outputs = resp.output  # depending on version, this may be resp.output[0].content...
-    print("Raw response object:\n", resp, "\n")
+    answer_text = None
+    try:
+        for item in resp.output:
+            content = getattr(item, "content", None)
+            if not content:
+                continue
+            for chunk in content:
+                if getattr(chunk, "type", None) == "output_text":
+                    answer_text = chunk.text
+                    break
+            if answer_text:
+                break
+    except Exception:
+        pass
+
+    if not answer_text:
+        answer_text = str(resp)
+
+    print("=== Answer ===\n")
+    print(answer_text)
+    print("\n==============\n")
 
 if __name__ == "__main__":
     import sys
