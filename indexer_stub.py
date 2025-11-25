@@ -43,33 +43,12 @@ class WikiDocument:
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
-    Correct OpenAI vector-store ingestion:
-      1) Upload file
-      2) Attach via batch with metadata
+    Upload a wiki document to the OpenAI vector store.
     """
-
     if VECTOR_STORE_ID == "vs_TBD":
         raise RuntimeError("Vector store ID not set in config.yaml")
 
-    # -----------------------------
-    # STEP 1: Upload the file
-    # -----------------------------
-    upload_name = f"{doc.path.replace('/', '_')}.md"
-    print(f"Uploading raw file to OpenAI: {upload_name}")
-
-    upload_result = client.files.create(
-        file={
-            "name": upload_name,
-            "contents": doc.content.encode("utf-8")
-        },
-        purpose="file_search"    # REQUIRED
-    )
-
-    file_id = upload_result.id
-
-    # -----------------------------
-    # STEP 2: Attach file to vector store with metadata
-    # -----------------------------
+    contents = doc.content
     metadata = {
         "kind": "wiki",
         "wiki_path": doc.path,
@@ -80,15 +59,18 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         "source_type": doc.source_type,
     }
 
-    print(f"Attaching file {file_id} to vector store {VECTOR_STORE_ID} with metadata...")
+    print(f"Uploading: {doc.title} -> vector store {VECTOR_STORE_ID}")
 
-    batch = client.vector_stores.file_batches.create(
+    result = client.vector_stores.files.upload(
         vector_store_id=VECTOR_STORE_ID,
-        file_ids=[file_id],
-        metadata=metadata
+        file={
+            "name": f"{doc.path.replace('/', '_')}.md",
+            "contents": contents.encode("utf-8"),
+        },
+        metadata=metadata,
     )
 
-    print("Batch created:", batch.id)
+    print("Uploaded:", result.id)
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
@@ -173,7 +155,7 @@ def walk_markdown_files():
 
 def main():
     print(f"Using wiki repo at: {REPO_ROOT}")
-    print(f"Vector store ID (placeholder): {VECTOR_STORE_ID}\n")
+    print(f"Vector store: {VECTOR_STORE_ID}\n")
 
     if not REPO_ROOT.exists():
         raise SystemExit("Repo root does not exist!")
@@ -183,16 +165,11 @@ def main():
         doc = build_document(md_path)
         if doc is None:
             continue
-        count += 1
-        print(f"[{count}] {doc.title!r}")
-        print(f"  path: {doc.path}")
-        print(f"  url : {doc.url}")
-        print(f"  tags: {doc.tags}")
-        print("  content preview:", repr(doc.content[:120]), "...\n")
 
         upsert_document_to_vector_store(doc)
         count += 1
-    print(f"Scanned {count} markdown files.")
+
+    print(f"\nCompleted uploading {count} files into vector store.")
 
 
 if __name__ == "__main__":
