@@ -59,8 +59,12 @@ async def ask(req: AskRequest):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": req.query},
         ],
-        tools=[{"type": "file_search"}],
-        file_search={"vector_store_ids": [VECTOR_STORE_ID]},
+        tools=[
+            {
+                "type": "file_search",
+                "vector_store_ids": [VECTOR_STORE_ID],
+            }
+        ],
     )
 
     # Extract answer text, as in ask_wiki.py
