@@ -33,7 +33,9 @@ def ask_wiki(query: str):
         model="gpt-4.1-mini",  # or gpt-4.1 / gpt-5.1 depending on access
         input=[{"role": "user", "content": query}],
         tools=[{"type": "file_search"}],
-        file_search={"vector_store_ids": [VECTOR_STORE_ID]},
+        tool_resources={
+            "file_search": {"vector_store_ids": [VECTOR_STORE_ID]}
+        },
     )
 
     # Print the answer text
