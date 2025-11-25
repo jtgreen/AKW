@@ -43,10 +43,23 @@ class WikiDocument:
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
-    Upload a wiki document to the OpenAI vector store.
+    Upload a wiki document to the OpenAI vector store using the
+    file upload + batch attach workflow.
     """
     if VECTOR_STORE_ID == "vs_TBD":
         raise RuntimeError("Vector store ID not set in config.yaml")
+
+    upload_name = f"{doc.path.replace('/', '_')}.md"
+    file_bytes = doc.content.encode("utf-8")
+
+    print(f"Uploading raw file to OpenAI: {upload_name}")
+
+    upload_result = client.files.create(
+        file=(upload_name, file_bytes),
+        purpose="file_search",
+    )
+
+    file_id = upload_result.id
 
     metadata = {
         "kind": "wiki",
@@ -58,18 +71,15 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         "source_type": doc.source_type,
     }
 
-    print(f"Uploading: {doc.title} -> vector store {VECTOR_STORE_ID}")
+    print(f"Attaching file {file_id} to vector store {VECTOR_STORE_ID}")
 
-    result = client.vector_stores.files.upload(
+    batch = client.vector_stores.file_batches.create(
         vector_store_id=VECTOR_STORE_ID,
-        file={
-            "name": f"{doc.path.replace('/', '_')}.md",
-            "contents": doc.content.encode("utf-8"),
-        },
+        file_ids=[file_id],
         metadata=metadata,
     )
 
-    print("Uploaded:", result.id)
+    print("Batch created:", batch.id)
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
