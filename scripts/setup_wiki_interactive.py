@@ -121,43 +121,41 @@ def main():
 
     # --- System prep ---
 
-    print("\n=== [1/7] Updating system & installing base packages ===")
+    print("\n=== [1/8] Updating system & installing base packages ===")
     run(["apt", "update"])
     run(["apt", "upgrade", "-y"])
     run(["apt", "install", "-y", "git", "curl", "ufw", "debian-keyring",
          "debian-archive-keyring", "apt-transport-https"])
 
-    print("\n=== [2/7] Configure UFW ===")
+    print("\n=== [2/8] Installing Python tooling (python3, pip, venv) ===")
+    run(["apt", "install", "-y", "python3", "python3-pip", "python3-venv"])
+
+    print("\n=== [3/8] Configure UFW ===")
     run(["ufw", "allow", "OpenSSH"], check=False)
     run(["ufw", "allow", "80/tcp"], check=False)
     run(["ufw", "allow", "443/tcp"], check=False)
     run(["ufw", "--force", "enable"])
 
-    print("\n=== [3/7] Install Docker ===")
+    print("\n=== [4/8] Install Docker ===")
     if shutil.which("docker") is None:
         run(["bash", "-lc", "curl -fsSL https://get.docker.com | bash"])
         run(["usermod", "-aG", "docker", "root"], check=False)
     else:
         print("Docker already installed.")
 
-    print("\n=== [4/7] Install Docker Compose v2 ===")
+    print("\n=== [5/8] Install Docker Compose v2 ===")
     if shutil.which("docker-compose") is None:
-        run([
-            "curl", "-L",
+        compose_url = (
             f"https://github.com/docker/compose/releases/download/v2.27.0/"
             f"docker-compose-{os.uname().sysname}-{os.uname().machine}"
-        ], check=False)
-        # Move to /usr/local/bin if downloaded to current dir
-        if Path(f"docker-compose-{os.uname().sysname}-{os.uname().machine}").exists():
-            shutil.move(
-                f"docker-compose-{os.uname().sysname}-{os.uname().machine}",
-                "/usr/local/bin/docker-compose"
-            )
-            os.chmod("/usr/local/bin/docker-compose", 0o755)
+        )
+        tmp_path = Path("/usr/local/bin/docker-compose")
+        run(["curl", "-L", "-o", str(tmp_path), compose_url])
+        os.chmod(tmp_path, 0o755)
     else:
         print("docker-compose already installed.")
 
-    print("\n=== [5/7] Install Caddy ===")
+    print("\n=== [6/8] Install Caddy ===")
     if shutil.which("caddy") is None:
         run([
             "curl", "-1sLf",
@@ -179,7 +177,7 @@ def main():
     else:
         print("Caddy already installed.")
 
-    print("\n=== [6/7] Create directory layout & copy stack/indexer ===")
+    print("\n=== [7/8] Create directory layout & copy stack/indexer ===")
     for d in (stack_dir, data_dir, indexer_dir):
         d.mkdir(parents=True, exist_ok=True)
 
@@ -222,6 +220,17 @@ def main():
         else:
             shutil.copy2(item, dest)
 
+    print("Setting up optional virtual environment for manual indexer runs...")
+    venv_path = indexer_dir / ".venv"
+    try:
+        run(["python3", "-m", "venv", str(venv_path)])
+        pip_bin = venv_path / "bin" / "pip"
+        req_file = indexer_dir / "requirements.txt"
+        if pip_bin.exists() and req_file.exists():
+            run([str(pip_bin), "install", "-r", str(req_file)])
+    except Exception as exc:
+        print(f"Warning: unable to create virtualenv: {exc}")
+
     data_dir_str = str(data_dir)
     stack_dir_str = str(stack_dir)
     indexer_dir_str = str(indexer_dir)
@@ -255,7 +264,7 @@ def main():
         },
     )
 
-    print("\n=== [7/7] Configure Caddy for domain ===")
+    print("\n=== [8/8] Configure Caddy for domain ===")
     caddyfile_path = Path("/etc/caddy/Caddyfile")
     caddyfile_text = f"""\
 {{
