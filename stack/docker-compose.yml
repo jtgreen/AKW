@@ -1,7 +1,83 @@
-# TODO: populate with Wiki.js + Postgres + Elasticsearch + Ask API services
 version: "3.9"
 
 services:
-  # db:
-  #   image: postgres:14
-  #   ...
+  db:
+    image: postgres:14
+    container_name: bsos-wiki-db
+    environment:
+      POSTGRES_DB: wiki
+      POSTGRES_USER: wikijs
+      POSTGRES_PASSWORD: wikijs123    # change this later
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - wiki_net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.21
+    container_name: bsos-wiki-es
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    restart: always
+    networks:
+      - wiki_net
+    # IMPORTANT: no ports: line → ES is NOT exposed to the internet
+
+  wikijs:
+    image: requarks/wiki:latest
+    container_name: bsos-wiki
+    depends_on:
+      - db
+      - elasticsearch
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: wikijs
+      DB_PASS: wikijs123
+      DB_NAME: wiki
+
+      # search
+      ES_HOST: http://elasticsearch:9200
+
+    ports:
+      - "3000:3000"  # Caddy proxies to this
+    restart: always
+    networks:
+      - wiki_net
+    volumes:
+      - /opt/bsos-wiki-data:/wiki/data   # <-- this is the bind mount
+
+  bsos-ask:
+    build:
+      context: /opt/bsos-wiki-indexer
+    container_name: bsos-ask
+    environment:
+      # pass your key into the container
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    # if you want the app to read config.yaml baked into the image,
+    # no volumes are strictly necessary. If you want to override it:
+    # volumes:
+    #   - /opt/bsos-wiki-indexer/config.yaml:/app/config.yaml:ro
+    restart: always
+    networks:
+      - wiki_net
+    ports:
+      - "4000:4000"
+
+volumes:
+  dbdata:
+  esdata:
+
+networks:
+  wiki_net:
+    driver: bridge
