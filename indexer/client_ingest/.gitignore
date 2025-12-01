@@ -3,3 +3,4 @@ __pycache__/
 batch_ingested.txt
 failed_pdfs.txt
 tmp.fix
+knowledge_wiki.egg-info/

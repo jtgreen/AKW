@@ -1,0 +1,7 @@
+# TODO: populate with Wiki.js + Postgres + Elasticsearch + Ask API services
+version: "3.9"
+
+services:
+  # db:
+  #   image: postgres:14
+  #   ...
