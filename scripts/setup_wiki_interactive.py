@@ -48,6 +48,17 @@ def run(cmd, check=True):
     subprocess.run(cmd, check=check)
 
 
+def replace_tokens(path: Path, replacements: dict[str, str]) -> None:
+    if not path.exists():
+        return
+    text = path.read_text()
+    original = text
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    if text != original:
+        path.write_text(text)
+
+
 def main():
     if os.geteuid() != 0:
         print("This script must be run as root (sudo).")
@@ -210,6 +221,39 @@ def main():
             shutil.copytree(item, dest)
         else:
             shutil.copy2(item, dest)
+
+    data_dir_str = str(data_dir)
+    stack_dir_str = str(stack_dir)
+    indexer_dir_str = str(indexer_dir)
+
+    # Customize stack artifacts with user-provided values
+    print("Customizing stack configuration files...")
+    replace_tokens(
+        stack_dir / "Caddyfile",
+        {
+            "bsos.wiki": domain,
+            "john.travis.green@gmail.com": email,
+            "/opt/bsos-wiki-data/ask": f"{data_dir_str}/ask",
+            "/opt/bsos-wiki-data/uploads": f"{data_dir_str}/uploads",
+        },
+    )
+    replace_tokens(
+        stack_dir / "docker-compose.yml",
+        {
+            "bsos-wiki-db": f"{wiki_name}-db",
+            "bsos-wiki-es": f"{wiki_name}-es",
+            "bsos-wiki": wiki_name,
+            "bsos-ask": f"{wiki_name}-ask",
+            "/opt/bsos-wiki-data": data_dir_str,
+            "/opt/bsos-wiki-indexer": indexer_dir_str,
+        },
+    )
+    replace_tokens(
+        stack_dir / "Makefile",
+        {
+            "/opt/bsos-wiki-stack": stack_dir_str,
+        },
+    )
 
     print("\n=== [7/7] Configure Caddy for domain ===")
     caddyfile_path = Path("/etc/caddy/Caddyfile")
