@@ -8,8 +8,6 @@ __pycache__/
 
 # Environment / secrets
 .env
-.indexer_state.json
-file_index.yaml
 
 # Editor junk
 *.swp

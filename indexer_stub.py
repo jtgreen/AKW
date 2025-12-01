@@ -27,22 +27,12 @@ REPO_ROOT = Path(CONFIG["wiki_repo_root"])
 OPENAI_CFG = CONFIG.get("openai", {})
 VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
 STATE_PATH = ROOT / ".indexer_state.json"
-FILE_INDEX_PATH = ROOT / "file_index.yaml"
 
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
-
-
-def slugify(value: str) -> str:
-    """Convert string to lowercase slug with hyphens."""
-    value = value.strip().lower()
-    value = re.sub(r"[^a-z0-9]+", "-", value)
-    return re.sub(r"-{2,}", "-", value).strip("-") or "doc"
 
 @dataclass
 class WikiDocument:
     """Logical document ready to be sent to OpenAI vector store."""
-    doc_id: str
-    kind: str          # "wiki" or "pdf"
     path: str          # wiki path, e.g. "shock/hemorrhage/cardiac/..."
     url: str           # https://bsos.wiki/<path>
     title: str
@@ -54,7 +44,7 @@ class WikiDocument:
 
 # ------------------- Helpers -------------------
 
-def upsert_document_to_vector_store(doc: WikiDocument) -> str:
+def upsert_document_to_vector_store(doc: WikiDocument):
     """
     Upload a wiki document to the OpenAI vector store.
     Prefers the new single-call API, but falls back to the legacy
@@ -64,8 +54,7 @@ def upsert_document_to_vector_store(doc: WikiDocument) -> str:
         raise RuntimeError("Vector store ID not set in config.yaml")
 
     metadata = {
-        "doc_id": doc.doc_id,
-        "kind": doc.kind,
+        "kind": "wiki",
         "wiki_path": doc.path,
         "wiki_url": doc.url,
         "title": doc.title,
@@ -88,9 +77,8 @@ def upsert_document_to_vector_store(doc: WikiDocument) -> str:
             },
             metadata=metadata,
         )
-        file_id = result.id
-        print("Uploaded:", file_id)
-        return file_id
+        print("Uploaded:", result.id)
+        return
     except (AttributeError, TypeError):
         print("vector_stores.files.upload unavailable; falling back to legacy upload.")
 
@@ -117,14 +105,12 @@ def upsert_document_to_vector_store(doc: WikiDocument) -> str:
         batch = client.vector_stores.file_batches.create(**batch_kwargs)
 
     print("Batch created:", batch.id)
-    return file_id
 
 
 def compute_document_hash(doc: WikiDocument) -> str:
     """Return a stable hash of the document content for change detection."""
     hasher = hashlib.sha256()
-    payload = json.dumps(asdict(doc), sort_keys=True, ensure_ascii=False).encode("utf-8")
-    hasher.update(payload)
+    hasher.update(doc.content.encode("utf-8"))
     return hasher.hexdigest()
 
 
@@ -140,41 +126,6 @@ def load_index_state() -> dict:
 
 def save_index_state(state: dict) -> None:
     STATE_PATH.write_text(json.dumps(state, indent=2, sort_keys=True))
-
-
-def load_file_index() -> dict:
-    if not FILE_INDEX_PATH.exists():
-        return {}
-    data = yaml.safe_load(FILE_INDEX_PATH.read_text()) or {}
-    if not isinstance(data, dict):
-        print("file_index.yaml malformed; starting fresh.")
-        return {}
-    return data
-
-
-def save_file_index(index: dict) -> None:
-    FILE_INDEX_PATH.write_text(
-        yaml.safe_dump(index, sort_keys=True, allow_unicode=True)
-    )
-
-
-def update_file_index(index: dict, file_id: str, doc: WikiDocument) -> None:
-    """Track latest metadata for a vector-store file entry."""
-    # Remove stale entries referencing this doc_id
-    stale = [fid for fid, meta in index.items() if meta.get("doc_id") == doc.doc_id and fid != file_id]
-    for fid in stale:
-        del index[fid]
-
-    index[file_id] = {
-        "doc_id": doc.doc_id,
-        "kind": doc.kind,
-        "title": doc.title,
-        "wiki_path": doc.path,
-        "wiki_url": doc.url,
-        "tags": doc.tags,
-        "year": doc.year,
-        "source_type": doc.source_type,
-    }
 
 def parse_front_matter(md_text: str) -> Tuple[dict, str]:
     """
@@ -229,28 +180,13 @@ def build_document(md_path: Path) -> WikiDocument | None:
     tags = normalize_tags(fm.get("tags"))
     year = str(fm["year"]) if "year" in fm else None
     source_type = fm.get("source_type")
-    kind = (fm.get("kind") or "wiki").strip().lower()
 
-    doc_id = fm.get("doc_id")
-    if not doc_id:
-        doc_id = slugify(title)
-        print(f"[WARN] {md_path}: missing doc_id; using fallback '{doc_id}'. Consider adding doc_id to front matter for stability.")
+    # Content: title as H1 + body
+    content = f"# {title}\n\n{body.strip()}\n"
 
     url = f"https://bsos.wiki/{wiki_path}"
-    body_text = body.strip()
-    sections = [
-        f"# {title}",
-        "",
-        f"Kind: {kind}",
-        f"Source: {url}",
-        "",
-        body_text,
-    ]
-    content = "\n".join(part for part in sections if part is not None).strip() + "\n"
 
     return WikiDocument(
-        doc_id=doc_id,
-        kind=kind,
         path=wiki_path,
         url=url,
         title=title,
@@ -280,8 +216,6 @@ def main():
         raise SystemExit("Repo root does not exist!")
 
     state = load_index_state()
-    file_index = load_file_index()
-    file_index_dirty = False
     total = 0
     uploaded = 0
     for md_path in walk_markdown_files():
@@ -290,25 +224,18 @@ def main():
             continue
 
         doc_hash = compute_document_hash(doc)
-        state_key = doc.doc_id
-        if state.get(state_key) == doc_hash:
+        if state.get(doc.path) == doc_hash:
             print(f"Skipping unchanged: {doc.title}")
             total += 1
             continue
 
-        file_id = upsert_document_to_vector_store(doc)
-        state[state_key] = doc_hash
+        upsert_document_to_vector_store(doc)
+        state[doc.path] = doc_hash
         uploaded += 1
         total += 1
-        if file_id:
-            update_file_index(file_index, file_id, doc)
-            file_index_dirty = True
 
     if uploaded:
         save_index_state(state)
-
-    if file_index_dirty:
-        save_file_index(file_index)
 
     print(f"\nCompleted run. Uploaded {uploaded} files (processed {total} total).")
 
