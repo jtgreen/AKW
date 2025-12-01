@@ -18,9 +18,10 @@ A fully private Wiki.js deployment for battlefield shock research, bundled with 
 10. [Locking Down Access (Google OAuth)](#locking-down-access-google-oauth)  
 11. [Uploads Directory](#uploads-directory)  
 12. [Indexer + Vector Store Pipeline](#indexer--vector-store-pipeline)  
-13. [“Ask Wiki” API + UI](#ask-wiki-api--ui)  
-14. [Multi-Wiki Pattern](#multi-wiki-pattern)  
-15. [Common Commands](#common-commands)  
+13. [Client Ingest (Laptop Scripts)](#client-ingest-laptop-scripts)  
+14. [“Ask Wiki” API + UI](#ask-wiki-api--ui)  
+15. [Multi-Wiki Pattern](#multi-wiki-pattern)  
+16. [Common Commands](#common-commands)  
 
 ---
 
@@ -351,6 +352,19 @@ python indexer_stub.py
 ```
 
 This primes the vector store and produces `file_index.yaml` for downstream citation parsing and future organizer agents.
+
+---
+
+## Client Ingest (Laptop Scripts)
+
+The ingestion toolkit that turns raw PDFs into wiki-ready Markdown now ships inside this repo under `client_ingest/`, but it is **meant to be run from your laptop**, not the droplet. Highlights:
+
+- `ingest_paper.py` summarizes a single PDF, uploads the source file (optional), and writes Markdown with front matter that already includes `doc_id` + `kind: "wiki"` so the droplet indexer and `file_index.yaml` stay in sync.
+- `batch_ingest.py` walks entire folders of PDFs, forwarding every flag after `--` directly to `ingest_paper.py` and tracking successes in `batch_ingested.txt`.
+- `client_ingest/README.md` documents the workflow (prereqs, OCR fallback, token/cost tracking, the new `--doc-id` override, etc.).
+- The folder has its own `.gitignore` so local state such as `batch_ingested.txt`, `failed_pdfs.txt`, and `ingest.log` never pollute the server-side repo.
+
+Keep this directory intact for source control, but run the commands from your laptop checkout where you have direct access to the PDFs and GUI tools; only the resulting Markdown commits (and optional PDF uploads) need to reach the droplet.
 
 ---
 
