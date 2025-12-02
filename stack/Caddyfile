@@ -10,13 +10,13 @@ bsos.wiki {
 
     # Ask UI (optional static HTML)
     handle_path /ask/* {
-        root * /opt/bsos-wiki-data/ask
+        root * /opt/bsos-wiki-repo/data/ask
         file_server
     }
 
     # Serve static PDFs (and other files) from /opt/bsos-wiki-data/uploads
     handle_path /uploads/* {
-        root * /opt/bsos-wiki-data/uploads
+        root * /opt/bsos-wiki-repo/data/uploads
         file_server
     }
 

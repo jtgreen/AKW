@@ -86,24 +86,20 @@ def main():
         print("OPENAI_API_KEY cannot be empty.")
         sys.exit(1)
 
-    # Repo structure: script is in repo_root/scripts/
-    script_path = Path(__file__).resolve()
-    repo_root = script_path.parent.parent
-    stack_src = repo_root / "stack"
-    indexer_src = repo_root / "indexer"
-
-    if not stack_src.is_dir():
-        print(f"ERROR: Expected stack/ directory at {stack_src}")
-        sys.exit(1)
-    if not indexer_src.is_dir():
-        print(f"ERROR: Expected indexer/ directory at {indexer_src}")
+    repo_url = input("Git repo URL (e.g. git@github.com:you/knowledge-wiki.git): ").strip()
+    if not repo_url:
+        print("Repo URL cannot be empty.")
         sys.exit(1)
 
     stack_dir = Path(f"/opt/{wiki_name}-stack")
     data_dir = Path(f"/opt/{wiki_name}-data")
     indexer_dir = Path(f"/opt/{wiki_name}-indexer")
+    repo_root = Path(f"/opt/{wiki_name}-repo")
+    stack_src = repo_root / "stack"
+    indexer_src = repo_root / "indexer"
 
     print("\nSummary:")
+    print(f"  repo_url    = {repo_url}")
     print(f"  repo_root   = {repo_root}")
     print(f"  stack_src   = {stack_src}")
     print(f"  indexer_src = {indexer_src}")
@@ -155,7 +151,7 @@ def main():
     else:
         print("docker-compose already installed.")
 
-    print("\n=== [6/8] Install Caddy ===")
+    print("\n=== [6/9] Install Caddy ===")
     if shutil.which("caddy") is None:
         run([
             "curl", "-1sLf",
@@ -177,7 +173,25 @@ def main():
     else:
         print("Caddy already installed.")
 
-    print("\n=== [7/8] Create directory layout & copy stack/indexer ===")
+    print("\n=== [7/9] Fetching repository ===")
+    repo_root.parent.mkdir(parents=True, exist_ok=True)
+    if repo_root.exists():
+        if not (repo_root / ".git").is_dir():
+            print(f"ERROR: {repo_root} exists but is not a git repository.")
+            sys.exit(1)
+        print(f"{repo_root} already exists; pulling latest changes...")
+        run(["git", "-C", str(repo_root), "pull", "--ff-only"])
+    else:
+        run(["git", "clone", repo_url, str(repo_root)])
+
+    if not stack_src.is_dir():
+        print(f"ERROR: Expected stack/ directory at {stack_src}")
+        sys.exit(1)
+    if not indexer_src.is_dir():
+        print(f"ERROR: Expected indexer/ directory at {indexer_src}")
+        sys.exit(1)
+
+    print("\n=== [8/9] Create directory layout & copy stack/indexer ===")
     for d in (stack_dir, data_dir, indexer_dir):
         d.mkdir(parents=True, exist_ok=True)
 
@@ -264,7 +278,7 @@ def main():
         },
     )
 
-    print("\n=== [8/8] Configure Caddy for domain ===")
+    print("\n=== [9/9] Configure Caddy for domain ===")
     caddyfile_path = Path("/etc/caddy/Caddyfile")
     caddyfile_text = f"""\
 {{

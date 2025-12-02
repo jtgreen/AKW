@@ -59,7 +59,7 @@ services:
 
   bsos-ask:
     build:
-      context: /opt/bsos-wiki-indexer
+      context: ../indexer
     container_name: bsos-ask
     environment:
       # pass your key into the container
