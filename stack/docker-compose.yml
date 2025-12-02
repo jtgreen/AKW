@@ -55,11 +55,11 @@ services:
     networks:
       - wiki_net
     volumes:
-      - /opt/bsos-wiki-data:/wiki/data   # <-- this is the bind mount
+      - /opt/knowledge-wiki/data:/wiki/data   # <-- this is the bind mount
 
   bsos-ask:
     build:
-      context: ../indexer
+      context: /opt/knowledge-wiki/indexer
     container_name: bsos-ask
     environment:
       # pass your key into the container
@@ -67,7 +67,7 @@ services:
     # if you want the app to read config.yaml baked into the image,
     # no volumes are strictly necessary. If you want to override it:
     # volumes:
-    #   - /opt/bsos-wiki-indexer/config.yaml:/app/config.yaml:ro
+    #   - /opt/knowledge-wiki/indexer/config.yaml:/app/config.yaml:ro
     restart: always
     networks:
       - wiki_net

@@ -1,5 +1,5 @@
 # Directory where your docker-compose.yml lives
-STACK_DIR := /opt/bsos-wiki-stack
+STACK_DIR := /opt/knowledge-wiki/stack
 COMPOSE := docker-compose
 
 .PHONY: up down restart logs ps pull stop build
@@ -36,5 +36,4 @@ stop:
 # Rebuild containers (rare)
 build:
         @cd $(STACK_DIR) && $(COMPOSE) build
-
 

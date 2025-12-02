@@ -91,21 +91,19 @@ def main():
         print("Repo URL cannot be empty.")
         sys.exit(1)
 
-    stack_dir = Path(f"/opt/{wiki_name}-stack")
-    data_dir = Path(f"/opt/{wiki_name}-data")
-    indexer_dir = Path(f"/opt/{wiki_name}-indexer")
-    repo_root = Path(f"/opt/{wiki_name}-repo")
-    stack_src = repo_root / "stack"
-    indexer_src = repo_root / "indexer"
+    repo_dir_name = input("Directory name under /opt for this repo (default: wiki name): ").strip() or wiki_name
+    repo_root = Path("/opt") / repo_dir_name
+    stack_dir = repo_root / "stack"
+    indexer_dir = repo_root / "indexer"
+    data_dir = repo_root / "data"
 
     print("\nSummary:")
     print(f"  repo_url    = {repo_url}")
     print(f"  repo_root   = {repo_root}")
-    print(f"  stack_src   = {stack_src}")
-    print(f"  indexer_src = {indexer_src}")
+    print(f"  repo_root   = {repo_root}")
     print(f"  stack_dir   = {stack_dir}")
-    print(f"  data_dir    = {data_dir}")
     print(f"  indexer_dir = {indexer_dir}")
+    print(f"  data_dir    = {data_dir}")
     print(f"  domain      = {domain}")
     print(f"  email       = {email}")
     print("")
@@ -184,16 +182,15 @@ def main():
     else:
         run(["git", "clone", repo_url, str(repo_root)])
 
-    if not stack_src.is_dir():
-        print(f"ERROR: Expected stack/ directory at {stack_src}")
+    if not stack_dir.is_dir():
+        print(f"ERROR: Expected stack/ directory at {stack_dir}")
         sys.exit(1)
-    if not indexer_src.is_dir():
-        print(f"ERROR: Expected indexer/ directory at {indexer_src}")
+    if not indexer_dir.is_dir():
+        print(f"ERROR: Expected indexer/ directory at {indexer_dir}")
         sys.exit(1)
 
-    print("\n=== [8/9] Create directory layout & copy stack/indexer ===")
-    for d in (stack_dir, data_dir, indexer_dir):
-        d.mkdir(parents=True, exist_ok=True)
+    print("\n=== [8/9] Prepare data directories ===")
+    data_dir.mkdir(parents=True, exist_ok=True)
 
     # data subdirs
     (data_dir / "uploads").mkdir(parents=True, exist_ok=True)
@@ -205,34 +202,6 @@ def main():
         pass
     os.chmod(data_dir / "uploads", 0o755)
     os.chmod(data_dir / "ask", 0o755)
-
-    # Copy stack and indexer contents (including Makefile, Caddyfile, etc.)
-    print(f"Copying {stack_src} → {stack_dir}")
-    # Clear dest and copy tree
-    for item in stack_dir.iterdir():
-        if item.is_dir():
-            shutil.rmtree(item)
-        else:
-            item.unlink()
-    for item in stack_src.iterdir():
-        dest = stack_dir / item.name
-        if item.is_dir():
-            shutil.copytree(item, dest)
-        else:
-            shutil.copy2(item, dest)
-
-    print(f"Copying {indexer_src} → {indexer_dir}")
-    for item in indexer_dir.iterdir():
-        if item.is_dir():
-            shutil.rmtree(item)
-        else:
-            item.unlink()
-    for item in indexer_src.iterdir():
-        dest = indexer_dir / item.name
-        if item.is_dir():
-            shutil.copytree(item, dest)
-        else:
-            shutil.copy2(item, dest)
 
     print("Setting up optional virtual environment for manual indexer runs...")
     venv_path = indexer_dir / ".venv"
@@ -256,8 +225,8 @@ def main():
         {
             "bsos.wiki": domain,
             "john.travis.green@gmail.com": email,
-            "/opt/bsos-wiki-data/ask": f"{data_dir_str}/ask",
-            "/opt/bsos-wiki-data/uploads": f"{data_dir_str}/uploads",
+            "/opt/knowledge-wiki/data/ask": f"{data_dir_str}/ask",
+            "/opt/knowledge-wiki/data/uploads": f"{data_dir_str}/uploads",
         },
     )
     replace_tokens(
@@ -267,14 +236,14 @@ def main():
             "bsos-wiki-es": f"{wiki_name}-es",
             "bsos-wiki": wiki_name,
             "bsos-ask": f"{wiki_name}-ask",
-            "/opt/bsos-wiki-data": data_dir_str,
-            "/opt/bsos-wiki-indexer": indexer_dir_str,
+            "/opt/knowledge-wiki/data": data_dir_str,
+            "/opt/knowledge-wiki/indexer": indexer_dir_str,
         },
     )
     replace_tokens(
         stack_dir / "Makefile",
         {
-            "/opt/bsos-wiki-stack": stack_dir_str,
+            "/opt/knowledge-wiki/stack": stack_dir_str,
         },
     )
 
