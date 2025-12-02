@@ -10,7 +10,7 @@ bsos.wiki {
 
     # Ask UI (optional static HTML)
     handle_path /ask/* {
-        root * /opt/knowledge-wiki/data/ask
+        root * /opt/knowledge-wiki/indexer/ask
         file_server
     }
 

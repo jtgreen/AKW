@@ -104,6 +104,9 @@ def main():
     print(f"  stack_dir   = {stack_dir}")
     print(f"  indexer_dir = {indexer_dir}")
     print(f"  data_dir    = {data_dir}")
+    print(f"  stack_dir   = {stack_dir}")
+    print(f"  indexer_dir = {indexer_dir}")
+    print(f"  data_dir    = {data_dir}")
     print(f"  domain      = {domain}")
     print(f"  email       = {email}")
     print("")
@@ -225,7 +228,7 @@ def main():
         {
             "bsos.wiki": domain,
             "john.travis.green@gmail.com": email,
-            "/opt/knowledge-wiki/data/ask": f"{data_dir_str}/ask",
+            "/opt/knowledge-wiki/indexer/ask": f"{indexer_dir_str}/ask",
             "/opt/knowledge-wiki/data/uploads": f"{data_dir_str}/uploads",
         },
     )
