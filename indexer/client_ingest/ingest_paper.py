@@ -706,13 +706,15 @@ def main(argv: List[str]) -> int:
     except IngestFailure as exc:
         emit_failure_payload(exc.reason, exc.detail)
         logger.log(f"Ingest failed: {exc.reason}")
-        if exc.detail and exc.reason != "too_long":
-            logger.log("Failure detail emitted for inspection.")
+        if exc.detail:
+            preview = exc.detail if len(exc.detail) <= 500 else exc.detail[:500] + "…"
+            logger.log(f"Detail: {preview}")
+            if exc.reason != "too_long":
+                logger.log("Full failure payload written above for inspection.")
         return 2
 
 
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+
 def run_ocr_fallback(pdf_path: Path, logger: IngestLogger) -> str:
     try:
         import ocrmypdf
@@ -731,7 +733,7 @@ def run_ocr_fallback(pdf_path: Path, logger: IngestLogger) -> str:
                 str(pdf_path),
                 str(tmp_pdf),
                 force_ocr=True,
-                skip_text=True,
+                # force_ocr already handles mixed text/PDFs; skip_text conflicts with it.
                 sidecar=str(sidecar),
                 progress_bar=False,
             )
@@ -746,3 +748,7 @@ def run_ocr_fallback(pdf_path: Path, logger: IngestLogger) -> str:
 
     logger.log("OCR fallback succeeded; continuing with summarized text.")
     return text
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
