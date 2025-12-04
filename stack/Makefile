@@ -1,39 +1,69 @@
-# Directory where your docker-compose.yml lives
-STACK_DIR := /opt/knowledge-wiki/stack
-COMPOSE := docker-compose
+# --- Paths ---
+REPO_ROOT = /opt/knowledge-wiki-remote
+STACK_DIR = $(REPO_ROOT)/stack
+DATA_DIR  = /opt/bsos-wiki-data
+ASK_SERVICE = bsos-ask        # Adjust to your actual service name
+CADDYFILE = /etc/caddy/Caddyfile
 
-.PHONY: up down restart logs ps pull stop build
+# --- Commands ---
+DOCKER_COMPOSE = docker-compose -f $(STACK_DIR)/docker-compose.yml
 
-# Start everything (detached mode)
-up:
-        @cd $(STACK_DIR) && $(COMPOSE) up -d
+# --- Default ---
+default: deploy
 
-# Stop and remove containers
-down:
-        @cd $(STACK_DIR) && $(COMPOSE) down
-
-# Stop, then start again
-restart:
-        @cd $(STACK_DIR) && $(COMPOSE) down
-        @cd $(STACK_DIR) && $(COMPOSE) up -d
-
-# View logs for all services
-logs:
-        @cd $(STACK_DIR) && $(COMPOSE) logs -f
-
-# Show running services
-ps:
-        @cd $(STACK_DIR) && $(COMPOSE) ps
-
-# Pull latest images without starting/restarting yet
+# --- Pull latest monorepo ---
 pull:
-        @cd $(STACK_DIR) && $(COMPOSE) pull
+	cd $(REPO_ROOT) && git pull
 
-# Stop services without removing containers
-stop:
-        @cd $(STACK_DIR) && $(COMPOSE) stop
+# --- Stop the whole stack ---
+down:
+	$(DOCKER_COMPOSE) down
 
-# Rebuild containers (rare)
-build:
-        @cd $(STACK_DIR) && $(COMPOSE) build
+# --- Rebuild and restart everything ---
+up:
+	$(DOCKER_COMPOSE) up -d --build
 
+# --- Restart only Ask API ---
+restart-ask:
+	$(DOCKER_COMPOSE) restart $(ASK_SERVICE)
+
+# --- Reload Caddy if the config is present ---
+reload-caddy:
+	if [ -f $(CADDYFILE) ]; then systemctl reload caddy; fi
+
+# --- Show logs for troubleshooting ---
+logs:
+	$(DOCKER_COMPOSE) logs -f
+
+# --- Docker service list ---
+ps:
+	$(DOCKER_COMPOSE) ps
+
+# --- Health checks ---
+health:
+	@echo "--- Testing Wiki.js ---"
+	curl -Ik https://bsos.wiki | head -n 1
+	@echo "--- Testing Ask UI ---"
+	curl -Ik https://bsos.wiki/ask | head -n 1
+	@echo "--- Testing Ask API ---"
+	curl -s -X POST https://bsos.wiki/ask/api/ask -H "Content-Type: application/json" \
+		-d '{"query": "hello from makefile"}' | head -c 200; echo
+
+# --- Full deployment ---
+deploy: pull down up reload-caddy health
+	@echo "=== Deployment complete ==="
+
+# --- Clean vector store (optional) ---
+reset-vector-store:
+	@echo "Run python reset_vector_store.py manually"
+	@echo "(We can wire this target once you want full automation.)"
+
+# --- Reorg pipeline hooks (optional) ---
+reorg-catalog:
+	cd $(REPO_ROOT)/indexer && python organizer/build_catalog.py
+
+reorg-plan:
+	cd $(REPO_ROOT)/indexer && python organizer/plan_reorg.py
+
+reorg-apply:
+	cd $(REPO_ROOT)/indexer && python organizer/apply_reorg.py
