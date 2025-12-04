@@ -374,7 +374,8 @@ def main() -> None:
         client,
         args.model,
         system_prompt,
-        f"Here is the curated tag taxonomy and document summaries:\n{payload_json}",
+        "Return ONLY valid JSON. Here is the curated tag taxonomy and document summaries:\n"
+        f"{payload_json}\n\nRemember: respond with JSON only.",
         stream=not args.no_stream,
     )
 

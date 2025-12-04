@@ -345,7 +345,8 @@ def main() -> None:
     plan = call_model(
         client,
         args.model,
-        f"Here is the document catalog with existing tags:\n{payload_text}",
+        "Return ONLY valid JSON. Here is the document catalog with existing tags:\n"
+        f"{payload_text}\n\nRemember: respond with JSON only.",
         args.max_tags,
         args.max_tags_per_doc,
         stream=not args.no_stream,
