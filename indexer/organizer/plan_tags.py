@@ -39,6 +39,8 @@ Rules:
 - Provide short descriptions (<=140 chars) explaining each tag.
 - Do NOT include duplicate tags within a document.
 - Use only information present in the supplied document data.
+- The tag set should be defined by the total context of the documents.
+- Iterate at least 3 times to refine and improve the tag set based on this global context.
 """
 
 

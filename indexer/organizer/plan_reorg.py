@@ -27,6 +27,9 @@ Design a new directory tree under these constraints:
 - Define at most {max_hubs} top-level hubs (directories).
 - Directory depth beneath each hub must be ≤ {max_depth} (excluding the hub itself).
 - Use hub IDs that are safe for directories (lowercase, underscores).
+- Iterate at least three times to refine and improve the hub structure.
+- The hub structure should be the most effective way of organizing the information. 
+- Feel free to use information density measurements to guide your design.
 
 For every document:
 - Assign it to one or more hubs (by ID).
