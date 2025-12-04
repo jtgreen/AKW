@@ -16,6 +16,8 @@ import yaml
 DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
+SUMMARY_RE = re.compile(r"\*\*One-sentence takeaway:\*\*\s*(.+)", re.IGNORECASE)
+KEY_POINTS_HEADER_RE = re.compile(r"^#{2,6}\s+key points\s*$", re.IGNORECASE)
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,12 +107,47 @@ def derive_default_catalog_path(repo_root: Path) -> Path:
     return out_path
 
 
+def extract_summary_and_key_points(body: str) -> Tuple[str, list[str]]:
+    summary = ""
+    key_points: list[str] = []
+    lines = body.splitlines()
+    for line in lines:
+        match = SUMMARY_RE.search(line)
+        if match:
+            summary = match.group(1).strip()
+            break
+
+    capturing = False
+    for line in lines:
+        stripped = line.strip()
+        if KEY_POINTS_HEADER_RE.match(stripped):
+            capturing = True
+            continue
+        if capturing:
+            if stripped.startswith("#"):
+                break
+            if stripped.startswith(("-", "*")):
+                point = stripped.lstrip("-*").strip()
+                if point:
+                    key_points.append(point)
+            elif not stripped:
+                continue
+            else:
+                # treat plain text sentences as part of previous bullet if bullets missing
+                if key_points:
+                    key_points[-1] = f"{key_points[-1]} {stripped}"
+                else:
+                    key_points.append(stripped)
+    return summary, key_points
+
+
 def build_catalog(repo_root: Path) -> dict:
     docs = []
     for path in walk_markdown_files(repo_root):
         rel = path.relative_to(repo_root).as_posix()
         text = path.read_text(encoding="utf-8")
-        front_matter, _ = parse_front_matter(text)
+        front_matter, body = parse_front_matter(text)
+        summary, key_points = extract_summary_and_key_points(body)
         title = front_matter.get("title") or Path(rel).stem
         tags = normalize_tags(front_matter.get("tags"))
         docs.append(
@@ -119,6 +156,8 @@ def build_catalog(repo_root: Path) -> dict:
                 "title": title,
                 "tags": tags,
                 "raw_front_matter": sanitize_for_json(front_matter),
+                "one_sentence_takeaway": summary,
+                "key_points": key_points,
             }
         )
     return {"docs": docs}

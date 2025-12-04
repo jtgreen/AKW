@@ -17,7 +17,7 @@ import tempfile
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Tuple
 
 import math
 import posixpath
@@ -27,6 +27,7 @@ import shlex
 from openai import OpenAI
 from pypdf import PdfReader
 from pypdf.errors import PdfReadWarning
+import yaml
 
 
 DEFAULT_MODEL = "gpt-5.1"
@@ -52,6 +53,10 @@ PLACEHOLDER_TOKENS = [
     "unknown title",
 ]
 DEFAULT_LOG_FILE = "ingest.log"
+DEFAULT_STDOUT_LOG_FILE = "ingest_std_out.log"
+FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
+DOC_ID_CACHE: Dict[str, Path] | None = None
+DOC_ID_CACHE_ROOT: Path | None = None
 
 
 class IngestLogger:
@@ -61,11 +66,11 @@ class IngestLogger:
             self.log_path = self.log_path.expanduser()
             self.log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def log(self, message: str) -> None:
+    def log(self, message: str, *, persist: bool = True) -> None:
         timestamp = datetime.now().isoformat(timespec="seconds")
         line = f"[{timestamp}] {message}"
         print(line)
-        if self.log_path:
+        if persist and self.log_path:
             with self.log_path.open("a", encoding="utf-8") as handle:
                 handle.write(line + "\n")
 
@@ -415,6 +420,62 @@ def write_markdown(
     return output_path
 
 
+def resolve_directory(path: Path) -> Path:
+    expanded = path.expanduser()
+    if expanded.is_absolute():
+        return expanded
+    return (Path.cwd() / expanded).resolve()
+
+
+def parse_doc_id_from_file(path: Path) -> str | None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:
+        return None
+    match = FRONT_MATTER_RE.match(text)
+    if not match:
+        return None
+    try:
+        data = yaml.safe_load(match.group(1)) or {}
+    except Exception:
+        return None
+    doc_id = data.get("doc_id")
+    return str(doc_id).strip() if doc_id else None
+
+
+def load_doc_id_registry(root: Path) -> Dict[str, Path]:
+    global DOC_ID_CACHE, DOC_ID_CACHE_ROOT
+    resolved_root = root.resolve()
+    if DOC_ID_CACHE is not None and DOC_ID_CACHE_ROOT == resolved_root:
+        return DOC_ID_CACHE
+    registry: Dict[str, Path] = {}
+    if resolved_root.exists():
+        for md_path in resolved_root.rglob("*.md"):
+            doc_id = parse_doc_id_from_file(md_path)
+            if doc_id and doc_id not in registry:
+                registry[doc_id] = md_path
+    DOC_ID_CACHE = registry
+    DOC_ID_CACHE_ROOT = resolved_root
+    return registry
+
+
+def ensure_unique_doc_id(doc_id: str, root: Path) -> None:
+    registry = load_doc_id_registry(root)
+    existing = registry.get(doc_id)
+    if existing:
+        raise IngestFailure(
+            "duplicate_doc_id",
+            f"doc_id '{doc_id}' already exists at {existing}",
+        )
+
+
+def register_doc_id(doc_id: str, root: Path, md_path: Path) -> None:
+    global DOC_ID_CACHE, DOC_ID_CACHE_ROOT
+    if DOC_ID_CACHE is None or DOC_ID_CACHE_ROOT != root.resolve():
+        return
+    DOC_ID_CACHE[doc_id] = md_path.resolve()
+
+
 def extract_figure_captions(raw_text: str) -> List[Dict[str, str]]:
     candidates: List[Dict[str, str]] = []
     for match in FIGURE_REGEX.finditer(raw_text):
@@ -608,20 +669,73 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         default=DEFAULT_LOG_FILE,
         help="Path to append ingest logs (pass '-' to disable file logging).",
     )
+    parser.add_argument(
+        "--stdout-log-file",
+        type=str,
+        default=DEFAULT_STDOUT_LOG_FILE,
+        help="Path to tee all stdout into (pass '-' to disable stdout capture).",
+    )
     return parser.parse_args(argv)
 
 
-def main(argv: List[str]) -> int:
-    args = parse_args(argv)
+class StdoutTee:
+    def __init__(self, log_path: Path | None):
+        self.log_path = log_path.expanduser() if log_path else None
+        self._orig_stdout = None
+        self._log_handle = None
+
+    def __enter__(self):
+        if self.log_path:
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
+            self._log_handle = self.log_path.open("a", encoding="utf-8")
+            self._orig_stdout = sys.stdout
+            sys.stdout = self
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if self._orig_stdout is not None:
+            sys.stdout = self._orig_stdout
+            self._orig_stdout = None
+        if self._log_handle is not None:
+            self._log_handle.close()
+            self._log_handle = None
+
+    def write(self, data: str) -> int:
+        written = 0
+        if self._orig_stdout is not None:
+            written = self._orig_stdout.write(data)
+            self._orig_stdout.flush()
+        if self._log_handle is not None:
+            self._log_handle.write(data)
+            self._log_handle.flush()
+            written = len(data)
+        return written
+
+    def flush(self) -> None:
+        if self._orig_stdout is not None:
+            self._orig_stdout.flush()
+        if self._log_handle is not None:
+            self._log_handle.flush()
+
+    def isatty(self) -> bool:
+        if self._orig_stdout is not None:
+            return self._orig_stdout.isatty()
+        return False
+
+
+def run_ingest(args: argparse.Namespace) -> int:
     if not args.pdf.exists():
         print(f"PDF not found: {args.pdf}", file=sys.stderr)
         return 1
+    base_dir = resolve_directory(args.base_dir)
+    wiki_root = resolve_directory(args.wiki_root) if args.wiki_root else None
+    doc_id_scope = wiki_root or base_dir
     log_path = None if args.log_file == "-" else Path(args.log_file)
     logger = IngestLogger(log_path)
-    logger.log(f"Starting ingest for {args.pdf}")
+    logger.log(f"Starting ingest for {args.pdf}", persist=False)
 
     try:
-        logger.log(f"Extracting text from {args.pdf} ...")
+        logger.log(f"Extracting text from {args.pdf} ...", persist=False)
         raw_text = extract_text_from_pdf(args.pdf, logger)
         if not raw_text.strip():
             raw_text = run_ocr_fallback(args.pdf, logger)
@@ -649,7 +763,9 @@ def main(argv: List[str]) -> int:
 
         figure_captions = extract_figure_captions(raw_text)
         figure_summaries, figure_usage = summarize_figures(figure_captions, model=args.model)
-        wiki_path_prefix = infer_wiki_prefix(args.base_dir, args.wiki_root, args.wiki_path_prefix)
+        wiki_path_prefix = infer_wiki_prefix(base_dir, wiki_root, args.wiki_path_prefix)
+        if not args.dry_run and doc_id_scope:
+            ensure_unique_doc_id(doc_id, doc_id_scope)
 
         total_prompt_tokens = summary_usage.get("prompt_tokens", 0) + figure_usage.get("prompt_tokens", 0)
         total_completion_tokens = summary_usage.get("completion_tokens", 0) + figure_usage.get("completion_tokens", 0)
@@ -694,14 +810,17 @@ def main(argv: List[str]) -> int:
 
         output_path = write_markdown(
             summary,
-            args.base_dir,
+            base_dir,
             pdf_url=pdf_url,
             figure_summaries=figure_summaries,
             wiki_path_prefix=wiki_path_prefix,
             doc_id=doc_id,
             kind=DEFAULT_DOC_KIND,
         )
+        if doc_id_scope:
+            register_doc_id(doc_id, doc_id_scope, output_path)
         logger.log(f"Wrote {output_path}")
+        logger.log(f"Completed ingest for {args.pdf}")
         return 0
     except IngestFailure as exc:
         emit_failure_payload(exc.reason, exc.detail)
@@ -713,6 +832,12 @@ def main(argv: List[str]) -> int:
                 logger.log("Full failure payload written above for inspection.")
         return 2
 
+
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
+    stdout_log_path = None if args.stdout_log_file == "-" else Path(args.stdout_log_file)
+    with StdoutTee(stdout_log_path):
+        return run_ingest(args)
 
 
 def run_ocr_fallback(pdf_path: Path, logger: IngestLogger) -> str:

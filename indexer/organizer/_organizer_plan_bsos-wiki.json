@@ -1,0 +1,2994 @@
+{
+  "hubs": [
+    {
+      "id": "hemorrhagic_shock_and_resuscitation",
+      "title": "Hemorrhagic Shock, Exsanguination & Resuscitation",
+      "description": "Pathophysiology, staging, biomarkers, and treatment strategies for hemorrhagic and hypovolemic shock, including battlefield and civilian trauma care, resuscitation fluids, vasopressors, REBOA/SAAP, modeling, and outcome epidemiology."
+    },
+    {
+      "id": "heart_in_shock_and_ischemia",
+      "title": "Heart in Shock, Ischemia & Cardiac Arrest",
+      "description": "Effects of hemorrhage, sepsis, stress, and ischemia\u2013reperfusion on the heart: contractility, coronary perfusion, arrhythmias, metabolic remodeling, microstructure, and resuscitation physiology in cardiac arrest and cardiogenic states."
+    },
+    {
+      "id": "microcirculation_endothelium_and_organs",
+      "title": "Microcirculation, Endothelium & Organ Injury",
+      "description": "Microvascular perfusion, endothelial/glycocalyx biology, intestinal and hepatic injury, and mechanisms of multiple organ failure and endotheliopathy in trauma, sepsis, and resuscitation (including RAsE/SHINE)."
+    },
+    {
+      "id": "metabolism_mitochondria_and_redox",
+      "title": "Metabolism, Mitochondria & Redox in Shock/Ischemia",
+      "description": "Myocardial and systemic metabolism, mitochondrial function, succinate/succinate dehydrogenase biology, oxidative\u2013nitrosative stress, Ca2+\u2013redox signaling, metabolic therapies (pyruvate, iodide, itaconate, ALM), and related computational models."
+    },
+    {
+      "id": "models_methods_and_monitoring",
+      "title": "Models, Monitoring & Systems Approaches",
+      "description": "Animal and human models of hemorrhage and shock, cardiovascular and multiscale computational models, interstitial fluid/venous return mechanics, noninvasive monitoring (waveforms, CRM), bibliometrics, and trauma systems/triage analytics."
+    }
+  ],
+  "docs": [
+    {
+      "old_path": "causes-of-death-in-conventional-land-warfare.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/battlefield_mortality/causes_of_death_in_conventional_land_warfare.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "combat casualty care",
+        "hemorrhagic shock",
+        "trauma",
+        "battlefield medicine",
+        "exsanguination",
+        "craniocerebral trauma",
+        "sepsis",
+        "evacuation time",
+        "prehospital care",
+        "military medicine",
+        "shock resuscitation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "combat_casualty_care",
+        "battlefield_trauma",
+        "exsanguination",
+        "traumatic_brain_injury",
+        "sepsis",
+        "prehospital_care",
+        "trauma_systems",
+        "resuscitation_strategies"
+      ]
+    },
+    {
+      "old_path": "pyruvate-enhancement-of-cardiac-performance.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_substrates/pyruvate_enhancement_of_cardiac_performance.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "pyruvate",
+        "cardioprotection",
+        "ischemia-reperfusion",
+        "hemorrhagic shock",
+        "cardiopulmonary bypass",
+        "cardiac arrest",
+        "heart failure",
+        "septic shock",
+        "myocardial energetics",
+        "oxidative stress",
+        "inflammation",
+        "erythropoietin signaling",
+        "calcium handling"
+      ],
+      "new_tags": [
+        "pyruvate",
+        "cardioprotection",
+        "ischemia_reperfusion",
+        "hemorrhagic_shock",
+        "cardiopulmonary_bypass",
+        "cardiac_arrest",
+        "heart_failure",
+        "septic_shock",
+        "myocardial_energetics",
+        "oxidative_stress",
+        "inflammation",
+        "calcium_handling"
+      ]
+    },
+    {
+      "old_path": "amiodarone-in-hemorrhagic-vf-arrest-pig-model.md",
+      "new_path": "heart_in_shock_and_ischemia/cardiac_arrest/amiodarone_in_hemorrhagic_vf_arrest_pig_model.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac arrest",
+        "ventricular fibrillation",
+        "amiodarone",
+        "vasopressin",
+        "open-chest CPR",
+        "porcine model",
+        "postresuscitation hemodynamics",
+        "myocardial injury"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_arrest",
+        "ventricular_fibrillation",
+        "antiarrhythmic_therapy",
+        "vasopressors",
+        "cpr_physiology",
+        "swine_model",
+        "postresuscitation_hemodynamics",
+        "myocardial_injury"
+      ]
+    },
+    {
+      "old_path": "shock-plus-pneumonectomy-causes-right-heart-failure.md",
+      "new_path": "heart_in_shock_and_ischemia/right_heart_failure/shock_plus_pneumonectomy_causes_right_heart_failure.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "pneumonectomy",
+        "right ventricular failure",
+        "pulmonary vascular resistance",
+        "trauma surgery",
+        "cardiopulmonary physiology",
+        "large animal model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "right_ventricular_failure",
+        "pulmonary_vascular_resistance",
+        "trauma_surgery",
+        "cardiopulmonary_physiology",
+        "large_animal_model"
+      ]
+    },
+    {
+      "old_path": "atrial-arrhythmias-in-icu-trauma-patients.md",
+      "new_path": "heart_in_shock_and_ischemia/arrhythmias/atrial_arrhythmias_in_icu_trauma_patients.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "trauma",
+        "intensive care",
+        "atrial fibrillation",
+        "atrial arrhythmias",
+        "cardiac complications",
+        "beta-blockers",
+        "mortality risk",
+        "intracranial hemorrhage"
+      ],
+      "new_tags": [
+        "trauma",
+        "intensive_care",
+        "atrial_fibrillation",
+        "atrial_arrhythmias",
+        "cardiac_complications",
+        "beta_blockers",
+        "mortality_risk",
+        "traumatic_brain_injury"
+      ]
+    },
+    {
+      "old_path": "hemorrhage-induced-endotoxemia-and-rbpi21-in-rats.md",
+      "new_path": "microcirculation_endothelium_and_organs/gut_liver_axis/hemorrhage_induced_endotoxemia_and_rbpi21_in_rats.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "endotoxemia",
+        "bacterial translocation",
+        "tumor necrosis factor (TNF)",
+        "multiple organ failure",
+        "bactericidal/permeability-increasing protein (BPI)",
+        "rBPI21",
+        "gut barrier",
+        "sepsis pathogenesis",
+        "rat model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "endotoxemia",
+        "bacterial_translocation",
+        "tnf",
+        "multiple_organ_failure",
+        "bpi",
+        "gut_barrier",
+        "sepsis_pathogenesis",
+        "rat_model"
+      ]
+    },
+    {
+      "old_path": "transmural-glycolytic-enzyme-gradients-in-normal-lv-dog.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_heterogeneity/transmural_glycolytic_enzyme_gradients_in_normal_lv_dog.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "myocardial metabolism",
+        "glycolysis",
+        "transmural gradients",
+        "left ventricle",
+        "subendocardial ischemia",
+        "oxygen supply",
+        "canine model",
+        "enzyme activities"
+      ],
+      "new_tags": [
+        "myocardial_metabolism",
+        "glycolysis",
+        "transmural_gradients",
+        "left_ventricle",
+        "subendocardial_vulnerability",
+        "oxygen_supply",
+        "canine_model",
+        "enzyme_mapping"
+      ]
+    },
+    {
+      "old_path": "hemodynamic-neurohumoral-responses-to-acute-hypovolemia.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/physiology/hemodynamic_and_neurohumoral_responses_to_acute_hypovolemia.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "hypovolemia",
+        "circulatory failure",
+        "vasovagal syncope",
+        "baroreflex",
+        "cardiopulmonary receptors",
+        "sympathetic nervous system",
+        "vasopressin",
+        "renin-angiotensin system",
+        "catecholamines",
+        "neuropeptide Y",
+        "opioids",
+        "serotonin",
+        "anesthesia effects",
+        "conscious animal models"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "hypovolemia",
+        "circulatory_failure",
+        "baroreflex",
+        "cardiopulmonary_receptors",
+        "sympathetic_regulation",
+        "vasopressin",
+        "raas",
+        "catecholamines",
+        "endogenous_opioids",
+        "serotonin",
+        "conscious_animal_model"
+      ]
+    },
+    {
+      "old_path": "effects-of-hemorrhagic-shock-on-the-dog-heart.md",
+      "new_path": "heart_in_shock_and_ischemia/myocardial_metabolism/effects_of_hemorrhagic_shock_on_the_dog_heart.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial metabolism",
+        "coronary circulation",
+        "cardiac efficiency",
+        "subendocardial injury",
+        "sympathetic activation",
+        "canine model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_metabolism",
+        "coronary_circulation",
+        "cardiac_efficiency",
+        "subendocardial_injury",
+        "sympathetic_activation",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "plasma-succinate-and-mortality-after-critical-injury.md",
+      "new_path": "metabolism_mitochondria_and_redox/biomarkers/plasma_succinate_and_mortality_after_critical_injury.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "trauma",
+        "hemorrhagic shock",
+        "critical care",
+        "metabolomics",
+        "succinate",
+        "lactate",
+        "biomarkers",
+        "mortality prediction",
+        "mitochondrial dysfunction",
+        "ischemia-reperfusion"
+      ],
+      "new_tags": [
+        "trauma",
+        "hemorrhagic_shock",
+        "critical_care",
+        "metabolomics",
+        "succinate",
+        "lactate",
+        "biomarkers",
+        "mortality_prediction",
+        "mitochondrial_dysfunction",
+        "ischemia_reperfusion"
+      ]
+    },
+    {
+      "old_path": "dopamine-mechanisms-in-endotoxin-shock.md",
+      "new_path": "microcirculation_endothelium_and_organs/splanchnic_circulation/dopamine_mechanisms_in_endotoxin_shock.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "endotoxin shock",
+        "septic shock",
+        "hemorrhagic shock model",
+        "dopamine",
+        "hepatosplanchnic circulation",
+        "venous return",
+        "cardiac output",
+        "canine model"
+      ],
+      "new_tags": [
+        "endotoxin_shock",
+        "septic_shock",
+        "dopamine",
+        "hepatosplanchnic_circulation",
+        "venous_return",
+        "cardiac_output",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "acute-coronary-insufficiency-from-hemorrhage.md",
+      "new_path": "heart_in_shock_and_ischemia/subendocardial_ischemia/acute_coronary_insufficiency_from_hemorrhage.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "acute coronary insufficiency",
+        "myocardial ischemia",
+        "subendocardial necrosis",
+        "gastrointestinal hemorrhage",
+        "cardiac failure",
+        "electrocardiography",
+        "coronary circulation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "acute_coronary_insufficiency",
+        "myocardial_ischemia",
+        "subendocardial_necrosis",
+        "gastrointestinal_bleeding",
+        "cardiac_failure",
+        "electrocardiography",
+        "coronary_circulation"
+      ]
+    },
+    {
+      "old_path": "intestinal-factor-in-irreversible-endotoxin-shock.md",
+      "new_path": "microcirculation_endothelium_and_organs/gut_liver_axis/intestinal_factor_in_irreversible_endotoxin_shock.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "endotoxin shock",
+        "septic shock",
+        "hemorrhagic shock",
+        "intestinal ischemia",
+        "vasoconstriction",
+        "sympathomimetic agents",
+        "adrenergic blockade",
+        "hydrocortisone",
+        "vasopressors",
+        "canine model",
+        "microcirculation",
+        "plasma volume",
+        "hemorrhagic necrosis"
+      ],
+      "new_tags": [
+        "endotoxin_shock",
+        "septic_shock",
+        "hemorrhagic_shock",
+        "intestinal_ischemia",
+        "sympathomimetics",
+        "adrenergic_blockade",
+        "corticosteroids",
+        "vasopressors",
+        "canine_model",
+        "microcirculation",
+        "plasma_volume_loss"
+      ]
+    },
+    {
+      "old_path": "myocardial-response-to-acute-oligemic-hypotension.md",
+      "new_path": "heart_in_shock_and_ischemia/contractility/myocardial_response_to_acute_oligemic_hypotension.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "oligemic hypotension",
+        "myocardial function",
+        "cardiac output",
+        "animal model",
+        "venous return",
+        "hemodynamics"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "oligemic_hypotension",
+        "myocardial_function",
+        "cardiac_output",
+        "venous_return",
+        "hemodynamics",
+        "animal_model"
+      ]
+    },
+    {
+      "old_path": "adrenergic-blockade-in-experimental-haemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/pharmacology/adrenergic_blockade_in_experimental_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "adrenergic blockade",
+        "alpha blockade",
+        "beta blockade",
+        "combined blockade",
+        "microcirculation",
+        "metabolic acidosis",
+        "dog model",
+        "cardiovascular physiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "adrenergic_blockade",
+        "alpha_blockade",
+        "beta_blockade",
+        "combined_blockade",
+        "microcirculation",
+        "metabolic_acidosis",
+        "dog_model"
+      ]
+    },
+    {
+      "old_path": "control-of-bp-in-hemorrhagic-hypovolemic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/physiology/control_of_bp_in_hemorrhagic_hypovolemic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "hypovolemic shock",
+        "central blood pressure",
+        "peripheral blood pressure",
+        "autonomic regulation",
+        "RAAS",
+        "endothelium",
+        "centhaquine",
+        "vasopressors",
+        "cardiorenal protection"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "hypovolemic_shock",
+        "central_blood_pressure",
+        "peripheral_blood_pressure",
+        "autonomic_regulation",
+        "raas",
+        "endothelium",
+        "centhaquine",
+        "vasopressors",
+        "renal_protection"
+      ]
+    },
+    {
+      "old_path": "arterial-isovolumic-contraction-period-in-hemorrhagic-shock.md",
+      "new_path": "models_methods_and_monitoring/waveform_indices/arterial_isovolumic_contraction_period_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "models_methods_and_monitoring",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac function",
+        "left ventricle",
+        "isovolumic contraction period",
+        "pre-ejection period",
+        "stroke volume variation",
+        "pulse pressure variation",
+        "hemodynamic monitoring",
+        "mechanical ventilation",
+        "swine model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_function",
+        "left_ventricle",
+        "hemodynamic_monitoring",
+        "stroke_volume_variation",
+        "pulse_pressure_variation",
+        "arterial_waveform",
+        "mechanical_ventilation",
+        "swine_model"
+      ]
+    },
+    {
+      "old_path": "changing-incidence-of-ventricular-fibrillation-in-cardiac-arrest.md",
+      "new_path": "heart_in_shock_and_ischemia/cardiac_arrest/changing_incidence_of_ventricular_fibrillation_in_cardiac_arrest.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "cardiac arrest",
+        "ventricular fibrillation",
+        "pulseless electrical activity",
+        "out-of-hospital cardiac arrest",
+        "implantable cardioverter-defibrillator",
+        "cardiopulmonary resuscitation",
+        "shockable vs non-shockable rhythms",
+        "heart failure",
+        "sepsis",
+        "critical care"
+      ],
+      "new_tags": [
+        "cardiac_arrest",
+        "ventricular_fibrillation",
+        "pulseless_electrical_activity",
+        "out_of_hospital_cardiac_arrest",
+        "implantable_defibrillators",
+        "cpr",
+        "heart_failure",
+        "sepsis",
+        "critical_care"
+      ]
+    },
+    {
+      "old_path": "iodine-redistribution-in-trauma-sepsis-and-hibernation.md",
+      "new_path": "metabolism_mitochondria_and_redox/redox_mediators/iodine_redistribution_in_trauma_sepsis_and_hibernation.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "iodine",
+        "iodide",
+        "hemorrhagic shock",
+        "trauma",
+        "sepsis",
+        "ischemia-reperfusion injury",
+        "inflammation",
+        "oxidative stress",
+        "hibernation",
+        "thyroid hormone",
+        "elemental reducing agents"
+      ],
+      "new_tags": [
+        "iodide",
+        "hemorrhagic_shock",
+        "trauma",
+        "sepsis",
+        "ischemia_reperfusion",
+        "inflammation",
+        "oxidative_stress",
+        "hibernation",
+        "thyroid_hormone"
+      ]
+    },
+    {
+      "old_path": "controlled-vs-uncontrolled-hemorrhage-in-swine.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/models/controlled_vs_uncontrolled_hemorrhage_in_swine.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "uncontrolled hemorrhage",
+        "controlled hemorrhage",
+        "aortotomy",
+        "swine model",
+        "hemodynamics",
+        "cardiac output",
+        "blood pressure regulation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "controlled_hemorrhage",
+        "uncontrolled_hemorrhage",
+        "aortic_injury",
+        "swine_model",
+        "hemodynamics",
+        "cardiac_output",
+        "blood_pressure_regulation"
+      ]
+    },
+    {
+      "old_path": "isometric-ventricular-contraction-after-ejection-in-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/cardiac_mechanics/isometric_ventricular_contraction_after_ejection_in_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "circulatory shock",
+        "hemorrhagic shock",
+        "cardiac mechanics",
+        "left ventricle",
+        "aortic pressure",
+        "isometric contraction",
+        "subendocardial hemorrhage",
+        "experimental dog model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "circulatory_shock",
+        "cardiac_mechanics",
+        "left_ventricle",
+        "isometric_contraction",
+        "subendocardial_hemorrhage",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "mitochondrial-instability-reperfusion-arrhythmias-in-cardiomyocyte-monolayers.md",
+      "new_path": "metabolism_mitochondria_and_redox/mitochondrial_instability/mitochondrial_instability_and_reperfusion_arrhythmias_in_cardiomyocyte_monolayers.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "ischemia-reperfusion",
+        "ventricular arrhythmias",
+        "mitochondrial membrane potential",
+        "reactive oxygen species",
+        "KATP channels",
+        "neonatal rat ventricular myocytes",
+        "mitochondrial benzodiazepine receptor",
+        "IMAC",
+        "permeability transition pore",
+        "reentry"
+      ],
+      "new_tags": [
+        "ischemia_reperfusion",
+        "ventricular_arrhythmias",
+        "mitochondrial_membrane_potential",
+        "reactive_oxygen_species",
+        "katp_channels",
+        "neonatal_rat_myocytes",
+        "mitochondrial_channels",
+        "permeability_transition_pore",
+        "reentry"
+      ]
+    },
+    {
+      "old_path": "pyruvate-and-regional-function-in-stunned-myocardium.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_substrates/pyruvate_and_regional_function_in_stunned_myocardium.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "stunned myocardium",
+        "post-ischemic dysfunction",
+        "pyruvate",
+        "inotropy",
+        "regional ventricular function",
+        "canine model",
+        "metabolic therapy",
+        "coronary occlusion",
+        "myocardial energetics"
+      ],
+      "new_tags": [
+        "stunned_myocardium",
+        "postischemic_dysfunction",
+        "pyruvate",
+        "inotropy",
+        "regional_ventricular_function",
+        "canine_model",
+        "metabolic_therapy",
+        "coronary_occlusion",
+        "myocardial_energetics"
+      ]
+    },
+    {
+      "old_path": "time-factor-in-reversibility-of-myocardial-changes-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/myocardial_metabolism/time_factor_in_reversibility_of_myocardial_changes_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial metabolism",
+        "cardiac failure",
+        "oxygen extraction",
+        "lactate",
+        "pyruvate",
+        "dog model",
+        "irreversible shock"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_metabolism",
+        "cardiac_failure",
+        "oxygen_extraction",
+        "lactate",
+        "pyruvate",
+        "dog_model",
+        "irreversible_shock"
+      ]
+    },
+    {
+      "old_path": "traumatic-shock-incurable-by-volume-replacement.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/classic_irreversibility/traumatic_shock_incurable_by_volume_replacement.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "traumatic shock",
+        "irreversible shock",
+        "hemodynamics",
+        "blood viscosity",
+        "capillary circulation",
+        "liver perfusion",
+        "intermediary metabolism",
+        "resuscitation",
+        "volume replacement therapy",
+        "pressor agents"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "traumatic_shock",
+        "irreversible_shock",
+        "hemodynamics",
+        "blood_viscosity",
+        "capillary_circulation",
+        "liver_perfusion",
+        "resuscitation_strategies",
+        "pressor_agents"
+      ]
+    },
+    {
+      "old_path": "phasic-myocardial-flow-in-hemorrhagic-hypotension.md",
+      "new_path": "heart_in_shock_and_ischemia/coronary_flow/phasic_myocardial_flow_in_hemorrhagic_hypotension.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial ischemia",
+        "coronary blood flow",
+        "phasic coronary flow",
+        "subendocardial injury",
+        "beta-blockade",
+        "pronethalol",
+        "sympathetic activation",
+        "canine model",
+        "cardiac mechanics"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_ischemia",
+        "coronary_blood_flow",
+        "phasic_flow",
+        "subendocardial_injury",
+        "beta_blockade",
+        "sympathetic_activation",
+        "canine_model",
+        "cardiac_mechanics"
+      ]
+    },
+    {
+      "old_path": "coronary-flow-myocardial-metabolism-in-irreversible-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/coronary_flow/coronary_flow_and_myocardial_metabolism_in_irreversible_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "irreversible shock",
+        "coronary blood flow",
+        "myocardial metabolism",
+        "cardiac failure",
+        "experimental cardiology",
+        "perfusion"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "irreversible_shock",
+        "coronary_blood_flow",
+        "myocardial_metabolism",
+        "cardiac_failure",
+        "experimental_cardiology"
+      ]
+    },
+    {
+      "old_path": "experimental-hemorrhagic-shock-model-in-swine.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/models/experimental_hemorrhagic_shock_model_in_swine.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "swine model",
+        "hypovolemic shock",
+        "cardiac output",
+        "oxygen delivery",
+        "experimental surgery",
+        "critical care monitoring"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "swine_model",
+        "hypovolemic_shock",
+        "cardiac_output",
+        "oxygen_delivery",
+        "experimental_surgery",
+        "critical_care_monitoring"
+      ]
+    },
+    {
+      "old_path": "hyperbaric-oxygen-myocardial-lesions-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/therapies/hyperbaric_oxygen_and_myocardial_lesions_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial injury",
+        "subendocardial hemorrhage",
+        "hyperbaric oxygen",
+        "canine model",
+        "cardiac pathology",
+        "renal tubular necrosis"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_injury",
+        "subendocardial_hemorrhage",
+        "hyperbaric_oxygen",
+        "canine_model",
+        "cardiac_pathology",
+        "renal_injury"
+      ]
+    },
+    {
+      "old_path": "physiology-of-blood-loss-and-shock-via-lbnp.md",
+      "new_path": "models_methods_and_monitoring/human_models/physiology_of_blood_loss_and_shock_via_lbnp.md",
+      "hub_ids": [
+        "models_methods_and_monitoring",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "central hypovolemia",
+        "lower body negative pressure",
+        "autonomic nervous system",
+        "cerebral blood flow",
+        "sympathetic activity",
+        "respiratory pump",
+        "compensatory reserve",
+        "hemodynamic decompensation",
+        "trauma research"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "central_hypovolemia",
+        "lower_body_negative_pressure",
+        "autonomic_regulation",
+        "cerebral_blood_flow",
+        "sympathetic_activity",
+        "respiratory_pump",
+        "compensatory_reserve",
+        "hemodynamic_decompensation",
+        "human_model"
+      ]
+    },
+    {
+      "old_path": "myocardial-pyruvate-production-in-hemorrhagic-shock.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_pyruvate/myocardial_pyruvate_production_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial metabolism",
+        "pyruvate",
+        "lactate",
+        "coronary circulation",
+        "systemic hypotension",
+        "dog model",
+        "cardiac energetics",
+        "shock mediators"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_metabolism",
+        "pyruvate",
+        "lactate",
+        "coronary_circulation",
+        "systemic_hypotension",
+        "dog_model",
+        "cardiac_energetics",
+        "shock_mediators"
+      ]
+    },
+    {
+      "old_path": "traumatic-endotheliopathy-in-424-severely-injured-patients.md",
+      "new_path": "microcirculation_endothelium_and_organs/endotheliopathy/traumatic_endotheliopathy_in_424_severely_injured_patients.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "trauma",
+        "hemorrhagic shock",
+        "endotheliopathy",
+        "endothelial glycocalyx",
+        "syndecan-1",
+        "thrombomodulin",
+        "sympathoadrenal activation",
+        "catecholamines",
+        "coagulopathy",
+        "critical care"
+      ],
+      "new_tags": [
+        "trauma",
+        "hemorrhagic_shock",
+        "endotheliopathy",
+        "endothelial_glycocalyx",
+        "syndecan_1",
+        "thrombomodulin",
+        "sympathoadrenal_activation",
+        "catecholamines",
+        "coagulopathy",
+        "critical_care"
+      ]
+    },
+    {
+      "old_path": "evolution-of-capture-myopathy-in-ungulates.md",
+      "new_path": "heart_in_shock_and_ischemia/stress_cardiomyopathy/evolution_of_capture_myopathy_in_ungulates.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "capture myopathy",
+        "Takotsubo cardiomyopathy",
+        "stress cardiomyopathy",
+        "ungulates",
+        "evolutionary epidemiology",
+        "life history traits",
+        "predation risk",
+        "cardiac failure",
+        "comparative medicine"
+      ],
+      "new_tags": [
+        "capture_myopathy",
+        "stress_cardiomyopathy",
+        "takotsubo",
+        "ungulates",
+        "evolutionary_epidemiology",
+        "life_history",
+        "predation_risk",
+        "cardiac_failure",
+        "comparative_medicine"
+      ]
+    },
+    {
+      "old_path": "cardiac-physiology-of-exsanguination-arrest.md",
+      "new_path": "heart_in_shock_and_ischemia/exsanguination/cardiac_physiology_of_exsanguination_arrest.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "exsanguination",
+        "cardiac arrest",
+        "coronary perfusion",
+        "endovascular resuscitation",
+        "swine model",
+        "cardiac physiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "exsanguination",
+        "cardiac_arrest",
+        "coronary_perfusion",
+        "endovascular_resuscitation",
+        "swine_model",
+        "cardiac_physiology"
+      ]
+    },
+    {
+      "old_path": "agonal-period-postmortem-cardiac-metabolism.md",
+      "new_path": "metabolism_mitochondria_and_redox/agonal_and_postmortem/agonal_period_and_postmortem_cardiac_metabolism.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "cardiac preservation",
+        "cardiac transplantation",
+        "agonal period",
+        "warm ischemia",
+        "postmortem metabolism",
+        "hemorrhagic shock model",
+        "exsanguination",
+        "asphyxia",
+        "myocardial energetics",
+        "glycolysis"
+      ],
+      "new_tags": [
+        "cardiac_preservation",
+        "cardiac_transplantation",
+        "agonal_period",
+        "warm_ischemia",
+        "postmortem_metabolism",
+        "exsanguination",
+        "asphyxia",
+        "myocardial_energetics",
+        "glycolysis"
+      ]
+    },
+    {
+      "old_path": "transmural-glycolytic-enzyme-gradients-in-normal-lv-1967.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_heterogeneity/transmural_glycolytic_enzyme_gradients_in_normal_lv_1967.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "glycolysis",
+        "myocardial metabolism",
+        "left ventricle",
+        "transmural gradients",
+        "subendocardial ischemia",
+        "oxygen supply",
+        "dog model",
+        "cardiac energetics"
+      ],
+      "new_tags": [
+        "glycolysis",
+        "myocardial_metabolism",
+        "left_ventricle",
+        "transmural_gradients",
+        "subendocardial_vulnerability",
+        "oxygen_supply",
+        "dog_model",
+        "cardiac_energetics"
+      ]
+    },
+    {
+      "old_path": "pyruvate-fortified-resuscitation-after-hemorrhagic-shock.md",
+      "new_path": "metabolism_mitochondria_and_redox/metabolic_therapies/pyruvate_fortified_resuscitation_after_hemorrhagic_shock.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "fluid resuscitation",
+        "pyruvate",
+        "lactated Ringer\u0019s",
+        "ischemia-reperfusion",
+        "oxidative stress",
+        "nitrosative stress",
+        "systemic inflammation",
+        "myocardial injury",
+        "animal model",
+        "combat casualty care"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "fluid_resuscitation",
+        "pyruvate",
+        "crystalloid_resuscitation",
+        "ischemia_reperfusion",
+        "oxidative_stress",
+        "nitrosative_stress",
+        "systemic_inflammation",
+        "myocardial_injury",
+        "goat_model",
+        "combat_casualty_care"
+      ]
+    },
+    {
+      "old_path": "optimum-combined-adrenergic-blockade-in-experimental-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/pharmacology/optimum_combined_adrenergic_blockade_in_experimental_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "adrenergic blockade",
+        "alpha-blockade",
+        "beta-blockade",
+        "phenoxybenzamine",
+        "Trasicor",
+        "animal model",
+        "lactate/pyruvate",
+        "acid\u0013base balance",
+        "cardiovascular physiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "adrenergic_blockade",
+        "alpha_blockade",
+        "beta_blockade",
+        "phenoxybenzamine",
+        "beta_blocker_experimental",
+        "rabbit_model",
+        "lactate_pyruvate_ratio",
+        "acid_base_balance"
+      ]
+    },
+    {
+      "old_path": "cardiac-oxygen-supply-anaerobic-metabolism-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/myocardial_metabolism/cardiac_oxygen_supply_and_anaerobic_metabolism_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial metabolism",
+        "oxygen supply",
+        "lactate",
+        "pyruvate",
+        "coronary circulation",
+        "dog model",
+        "cardiac failure",
+        "redox state"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_metabolism",
+        "oxygen_supply",
+        "lactate",
+        "pyruvate",
+        "coronary_circulation",
+        "dog_model",
+        "redox_state",
+        "cardiac_failure"
+      ]
+    },
+    {
+      "old_path": "mesenteric-physiology-in-swine-hemorrhagic-shock.md",
+      "new_path": "microcirculation_endothelium_and_organs/splanchnic_circulation/mesenteric_physiology_in_swine_hemorrhagic_shock.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "mesenteric circulation",
+        "intestinal perfusion",
+        "swine model",
+        "resuscitation",
+        "mesenteric ischemia",
+        "portal circulation",
+        "microcirculation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "mesenteric_circulation",
+        "intestinal_perfusion",
+        "swine_model",
+        "resuscitation",
+        "mesenteric_ischemia",
+        "portal_circulation",
+        "microcirculation"
+      ]
+    },
+    {
+      "old_path": "definition-and-diagnosis-of-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/classic_irreversibility/definition_and_diagnosis_of_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "shock classification",
+        "irreversible shock",
+        "diagnostic criteria",
+        "experimental physiology",
+        "canine model",
+        "hemodynamics",
+        "hemoconcentration",
+        "tissue anoxia"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "shock_classification",
+        "irreversible_shock",
+        "diagnostic_criteria",
+        "canine_model",
+        "hemodynamics",
+        "hemoconcentration",
+        "tissue_anoxia"
+      ]
+    },
+    {
+      "old_path": "untitled.md",
+      "new_path": "models_methods_and_monitoring/misc/untitled_doc_placeholder.md",
+      "hub_ids": [
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac failure",
+        "trauma",
+        "resuscitation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_failure",
+        "trauma",
+        "resuscitation"
+      ]
+    },
+    {
+      "old_path": "seven-mathematical-models-of-hemorrhagic-shock.md",
+      "new_path": "models_methods_and_monitoring/cardiovascular_models/seven_mathematical_models_of_hemorrhagic_shock.md",
+      "hub_ids": [
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiovascular modeling",
+        "systems physiology",
+        "baroreflex",
+        "renal control",
+        "hemodynamics",
+        "hypovolemia",
+        "lumped-parameter models"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiovascular_modeling",
+        "systems_physiology",
+        "baroreflex",
+        "renal_control",
+        "hemodynamics",
+        "hypovolemia",
+        "lumped_parameter_models"
+      ]
+    },
+    {
+      "old_path": "zencur-cardiovascular-model-for-hemorrhagic-shock.md",
+      "new_path": "models_methods_and_monitoring/cardiovascular_models/zencur_cardiovascular_model_for_hemorrhagic_shock.md",
+      "hub_ids": [
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiovascular modeling",
+        "baroreflex",
+        "transcapillary refill",
+        "porcine model",
+        "hemodynamics",
+        "massive transfusion prediction"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiovascular_modeling",
+        "baroreflex",
+        "transcapillary_refill",
+        "swine_model",
+        "hemodynamics",
+        "massive_transfusion_prediction"
+      ]
+    },
+    {
+      "old_path": "cardiac-physiology-in-exsanguination-cardiac-arrest.md",
+      "new_path": "heart_in_shock_and_ischemia/exsanguination/cardiac_physiology_in_exsanguination_cardiac_arrest.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "exsanguination",
+        "cardiac arrest",
+        "coronary perfusion",
+        "endovascular resuscitation",
+        "swine model",
+        "selective aortic arch perfusion",
+        "preload failure",
+        "myocardial ischemia"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "exsanguination",
+        "cardiac_arrest",
+        "coronary_perfusion",
+        "endovascular_resuscitation",
+        "swine_model",
+        "selective_aortic_arch_perfusion",
+        "preload_failure",
+        "myocardial_ischemia"
+      ]
+    },
+    {
+      "old_path": "myocardial-carbohydrate-metabolism-in-dogs.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_substrates/myocardial_carbohydrate_metabolism_in_dogs.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "myocardial metabolism",
+        "carbohydrate metabolism",
+        "lactate",
+        "pyruvate",
+        "glucose",
+        "hyperglycemia",
+        "starvation",
+        "respiratory quotient",
+        "coronary sinus catheterization",
+        "canine model"
+      ],
+      "new_tags": [
+        "myocardial_metabolism",
+        "carbohydrate_metabolism",
+        "lactate",
+        "pyruvate",
+        "glucose",
+        "hyperglycemia",
+        "starvation",
+        "respiratory_quotient",
+        "coronary_sinus_sampling",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "alkalinizing-agents-in-preventing-irreversible-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/classic_irreversibility/alkalinizing_agents_in_preventing_irreversible_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "irreversible shock",
+        "acidosis",
+        "sodium bicarbonate",
+        "sodium lactate",
+        "resuscitation",
+        "canine model",
+        "hemodynamic failure",
+        "microcirculation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "irreversible_shock",
+        "acidosis",
+        "sodium_bicarbonate",
+        "sodium_lactate",
+        "resuscitation",
+        "canine_model",
+        "hemodynamic_failure"
+      ]
+    },
+    {
+      "old_path": "coronary-flow-in-hemorrhagic-hypotension-and-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/coronary_flow/coronary_flow_in_hemorrhagic_hypotension_and_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "coronary circulation",
+        "cardiac failure",
+        "coronary blood flow",
+        "vascular resistance",
+        "canine model",
+        "hemodynamics"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "coronary_circulation",
+        "coronary_blood_flow",
+        "vascular_resistance",
+        "cardiac_failure",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "modeling-cardiac-dysfunction-after-traumatic-hemorrhage.md",
+      "new_path": "heart_in_shock_and_ischemia/post_traumatic_cardiomyopathy/modeling_cardiac_dysfunction_after_traumatic_hemorrhage.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "trauma",
+        "hemorrhagic shock",
+        "cardiac dysfunction",
+        "myocardial injury",
+        "mouse model",
+        "inflammation",
+        "necroptosis",
+        "AIF",
+        "echocardiography-guided resuscitation"
+      ],
+      "new_tags": [
+        "trauma",
+        "hemorrhagic_shock",
+        "cardiac_dysfunction",
+        "myocardial_injury",
+        "mouse_model",
+        "inflammation",
+        "cell_death_pathways",
+        "aif",
+        "echocardiography_guided_resuscitation"
+      ]
+    },
+    {
+      "old_path": "succinate-endotheliopathy-hemorrhagic-coagulopathy.md",
+      "new_path": "microcirculation_endothelium_and_organs/endotheliopathy/succinate_endotheliopathy_hemorrhagic_coagulopathy.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "trauma",
+        "endotheliopathy",
+        "endothelial glycocalyx",
+        "coagulopathy",
+        "succinate",
+        "succinate dehydrogenase",
+        "mitochondrial ROS",
+        "membrane lipids",
+        "lysophospholipids",
+        "phospholipase A2",
+        "MMP24",
+        "MMP25",
+        "lung injury",
+        "kidney injury"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "trauma",
+        "endotheliopathy",
+        "endothelial_glycocalyx",
+        "coagulopathy",
+        "succinate",
+        "succinate_dehydrogenase",
+        "mitochondrial_ros",
+        "membrane_remodeling",
+        "phospholipase_a2",
+        "mmp24",
+        "mmp25",
+        "lung_injury",
+        "kidney_injury"
+      ]
+    },
+    {
+      "old_path": "beta-blockade-in-experimental-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/pharmacology/beta_blockade_in_experimental_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "beta-blockers",
+        "propranolol",
+        "CIBA 39'089 Ba",
+        "cardiac function",
+        "dog model",
+        "microcirculation",
+        "lactate metabolism",
+        "irreversible shock"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "beta_blockers",
+        "propranolol",
+        "experimental_beta_blocker",
+        "cardiac_function",
+        "dog_model",
+        "lactate_metabolism",
+        "irreversible_shock"
+      ]
+    },
+    {
+      "old_path": "sympathetic-opioid-mediated-adjustments-to-hemorrhage.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/physiology/sympathetic_and_opioid_mediated_adjustments_to_hemorrhage.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "hemorrhage",
+        "sympathetic nervous system",
+        "endogenous opioids",
+        "naloxone",
+        "vascular resistance",
+        "catecholamines",
+        "animal model",
+        "rabbit"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "sympathetic_regulation",
+        "endogenous_opioids",
+        "naloxone",
+        "vascular_resistance",
+        "catecholamines",
+        "rabbit_model"
+      ]
+    },
+    {
+      "old_path": "the-heart-in-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/overview/the_heart_in_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac failure",
+        "subendocardial hemorrhage",
+        "myocardial necrosis",
+        "zonal lesions",
+        "myocardial depressant factor",
+        "catecholamines",
+        "myocardial ischemia",
+        "pathophysiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_failure",
+        "subendocardial_hemorrhage",
+        "myocardial_necrosis",
+        "zonal_lesions",
+        "myocardial_depressant_factor",
+        "catecholamines",
+        "myocardial_ischemia",
+        "pathophysiology"
+      ]
+    },
+    {
+      "old_path": "sdh-inhibition-and-oxygen-utilization-in-hemorrhagic-shock-via-hsi.md",
+      "new_path": "metabolism_mitochondria_and_redox/succinate_pathway/sdh_inhibition_and_oxygen_utilization_in_hemorrhagic_shock_via_hsi.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "microcirculation",
+        "succinate dehydrogenase",
+        "itaconate",
+        "reactive oxygen species",
+        "reperfusion injury",
+        "hyperspectral imaging",
+        "oxygen utilization",
+        "animal model",
+        "hamster dorsal window chamber"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "microcirculation",
+        "succinate_dehydrogenase",
+        "itaconate",
+        "reactive_oxygen_species",
+        "reperfusion_injury",
+        "hyperspectral_imaging",
+        "oxygen_utilization",
+        "hamster_model"
+      ]
+    },
+    {
+      "old_path": "regulation-of-myocardial-carbohydrate-metabolism.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_substrates/regulation_of_myocardial_carbohydrate_metabolism.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "myocardial metabolism",
+        "carbohydrate metabolism",
+        "fatty acid oxidation",
+        "ischemia",
+        "reperfusion",
+        "heart failure",
+        "pyruvate dehydrogenase",
+        "glycolysis",
+        "pharmacologic metabolic modulation",
+        "lactate",
+        "CPT-I inhibitors",
+        "insulin",
+        "malonyl-CoA"
+      ],
+      "new_tags": [
+        "myocardial_metabolism",
+        "carbohydrate_metabolism",
+        "fatty_acid_oxidation",
+        "ischemia",
+        "reperfusion",
+        "heart_failure",
+        "pyruvate_dehydrogenase",
+        "glycolysis",
+        "metabolic_modulation",
+        "lactate"
+      ]
+    },
+    {
+      "old_path": "oxidative-stress-diabetes-and-myocardial-ischemia.md",
+      "new_path": "microcirculation_endothelium_and_organs/coronary_microvasculature/oxidative_stress_diabetes_and_myocardial_ischemia.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "diabetes mellitus",
+        "ischemic heart disease",
+        "oxidative stress",
+        "coronary microvascular dysfunction",
+        "ion channels",
+        "coronary blood flow",
+        "heart failure",
+        "coronary artery disease"
+      ],
+      "new_tags": [
+        "diabetes",
+        "ischemic_heart_disease",
+        "oxidative_stress",
+        "coronary_microvascular_dysfunction",
+        "ion_channels",
+        "coronary_blood_flow",
+        "heart_failure"
+      ]
+    },
+    {
+      "old_path": "endothelial-mitochondria-in-vascular-disease.md",
+      "new_path": "microcirculation_endothelium_and_organs/endothelial_biology/endothelial_mitochondria_in_vascular_disease.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "review",
+        "endothelium",
+        "mitochondria",
+        "reactive oxygen species",
+        "vascular biology",
+        "atherosclerosis",
+        "diabetes",
+        "pulmonary arterial hypertension",
+        "systemic hypertension",
+        "senescence",
+        "mitophagy",
+        "cardiovascular disease"
+      ],
+      "new_tags": [
+        "endothelium",
+        "mitochondria",
+        "reactive_oxygen_species",
+        "vascular_biology",
+        "atherosclerosis",
+        "diabetes",
+        "pulmonary_hypertension",
+        "systemic_hypertension",
+        "senescence",
+        "mitophagy"
+      ]
+    },
+    {
+      "old_path": "myocardium-of-the-dog-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/myocardial_pathology/myocardium_of_the_dog_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial failure",
+        "cardiac histopathology",
+        "histochemistry",
+        "canine model",
+        "microinfarction",
+        "subendocardial hemorrhage",
+        "myocardial metabolism"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_failure",
+        "cardiac_histopathology",
+        "canine_model",
+        "microinfarction",
+        "subendocardial_hemorrhage",
+        "myocardial_metabolism"
+      ]
+    },
+    {
+      "old_path": "cpp-and-rosc-after-prolonged-cardiac-arrest.md",
+      "new_path": "heart_in_shock_and_ischemia/cardiac_arrest/cpp_and_rosc_after_prolonged_cardiac_arrest.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "coronary perfusion pressure",
+        "CPP threshold",
+        "cardiac arrest",
+        "ventricular fibrillation",
+        "cardiopulmonary resuscitation",
+        "CPR hemodynamics",
+        "animal model",
+        "swine",
+        "vasopressors",
+        "resuscitation physiology",
+        "ROSC predictors"
+      ],
+      "new_tags": [
+        "coronary_perfusion_pressure",
+        "cardiac_arrest",
+        "ventricular_fibrillation",
+        "cpr_physiology",
+        "swine_model",
+        "vasopressors",
+        "rosc_predictors"
+      ]
+    },
+    {
+      "old_path": "hematocrit-ratio-and-susceptibility-to-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/blood_properties/hematocrit_ratio_and_susceptibility_to_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "hematocrit",
+        "irreversible shock",
+        "microcirculation",
+        "oxygen delivery",
+        "buffer capacity",
+        "canine model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "hematocrit",
+        "irreversible_shock",
+        "oxygen_delivery",
+        "buffer_capacity",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "l-norepinephrine-myocardial-o-tension-and-survival-in-acute-hemorrhagic-hypotension.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/pharmacology/l_norepinephrine_myocardial_o2_tension_and_survival_in_acute_hemorrhagic_hypotension.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "acute hemorrhagic hypotension",
+        "norepinephrine",
+        "myocardial oxygen tension",
+        "coronary circulation",
+        "canine model",
+        "resuscitation timing",
+        "sympathomimetic agents"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "acute_hypotension",
+        "norepinephrine",
+        "myocardial_oxygen_tension",
+        "coronary_circulation",
+        "canine_model",
+        "resuscitation_timing"
+      ]
+    },
+    {
+      "old_path": "iodide-protection-in-myocardial-reperfusion-injury.md",
+      "new_path": "metabolism_mitochondria_and_redox/redox_mediators/iodide_protection_in_myocardial_reperfusion_injury.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac failure",
+        "myocardial ischemia-reperfusion",
+        "reperfusion injury",
+        "iodide",
+        "halogens",
+        "thyroid function",
+        "cardioprotection",
+        "mouse model"
+      ],
+      "new_tags": [
+        "myocardial_ischemia_reperfusion",
+        "reperfusion_injury",
+        "iodide",
+        "thyroid_function",
+        "cardioprotection",
+        "mouse_model"
+      ]
+    },
+    {
+      "old_path": "myocardial-contractile-force-in-experimental-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/contractility/myocardial_contractile_force_in_experimental_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac function",
+        "myocardial contractility",
+        "irreversible shock",
+        "canine model",
+        "levarterenol",
+        "blood transfusion",
+        "hemodynamics"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_function",
+        "myocardial_contractility",
+        "irreversible_shock",
+        "canine_model",
+        "norepinephrine",
+        "blood_transfusion"
+      ]
+    },
+    {
+      "old_path": "myocardial-glycolytic-enzymes-in-hemorrhagic-shock.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_enzymes/myocardial_glycolytic_enzymes_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "beta-blockade",
+        "propranolol",
+        "myocardial metabolism",
+        "glycolytic enzymes",
+        "dog model",
+        "subendocardial ischemia",
+        "cardiac failure"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "beta_blockade",
+        "propranolol",
+        "myocardial_metabolism",
+        "glycolytic_enzymes",
+        "dog_model",
+        "cardiac_failure"
+      ]
+    },
+    {
+      "old_path": "oxygen-deficit-in-irreversible-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/classic_irreversibility/oxygen_deficit_in_irreversible_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "oxygen deficit",
+        "shock irreversibility",
+        "cardiac failure",
+        "digitalis",
+        "ouabain",
+        "animal model",
+        "canine physiology",
+        "tissue hypoxia"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "oxygen_deficit",
+        "irreversible_shock",
+        "cardiac_failure",
+        "digitalis",
+        "ouabain",
+        "canine_model",
+        "tissue_hypoxia"
+      ]
+    },
+    {
+      "old_path": "hemorrhagic-shock-the-physiology-approach.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/clinical_strategies/hemorrhagic_shock_the_physiology_approach.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "shock classification",
+        "resuscitation",
+        "permissive hypotension",
+        "damage control resuscitation",
+        "microcirculation",
+        "vasopressors",
+        "trauma care",
+        "cardiovascular physiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "shock_classification",
+        "resuscitation_strategies",
+        "permissive_hypotension",
+        "damage_control_resuscitation",
+        "microcirculation",
+        "vasopressors",
+        "trauma_care"
+      ]
+    },
+    {
+      "old_path": "hematocrit-and-susceptibility-to-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/blood_properties/hematocrit_and_susceptibility_to_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "hematocrit",
+        "irreversible shock",
+        "oxygen delivery",
+        "buffering capacity",
+        "canine model",
+        "hemodynamics"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "hematocrit",
+        "irreversible_shock",
+        "oxygen_delivery",
+        "buffer_capacity",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "nejm-correspondence-on-hemorrhagic-shock-2018.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/clinical_strategies/nejm_correspondence_on_hemorrhagic_shock_2018.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "trauma",
+        "fibrinolysis",
+        "tranexamic acid",
+        "coagulopathy",
+        "immune dysfunction",
+        "inflammation",
+        "microcirculation",
+        "nitric oxide",
+        "blood transfusion",
+        "fluid resuscitation",
+        "permissive hypotension",
+        "damage control resuscitation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "trauma",
+        "fibrinolysis",
+        "tranexamic_acid",
+        "coagulopathy",
+        "immune_dysfunction",
+        "inflammation",
+        "microcirculation",
+        "nitric_oxide",
+        "blood_transfusion",
+        "fluid_resuscitation",
+        "permissive_hypotension"
+      ]
+    },
+    {
+      "old_path": "endotoxin-and-tnf-kinetics-after-hemorrhagic-shock-in-rats.md",
+      "new_path": "microcirculation_endothelium_and_organs/gut_liver_axis/endotoxin_and_tnf_kinetics_after_hemorrhagic_shock_in_rats.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "endotoxemia",
+        "bacterial translocation",
+        "tumor necrosis factor (TNF)",
+        "lipopolysaccharide (LPS)",
+        "portal circulation",
+        "systemic inflammation",
+        "gut-liver axis",
+        "rat model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "endotoxemia",
+        "bacterial_translocation",
+        "tnf",
+        "lps",
+        "portal_circulation",
+        "systemic_inflammation",
+        "gut_liver_axis",
+        "rat_model"
+      ]
+    },
+    {
+      "old_path": "hypocalcemia-in-trauma-systematic-review.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/blood_properties/hypocalcemia_in_trauma_systematic_review.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "trauma",
+        "hemorrhagic shock",
+        "hypocalcemia",
+        "ionized calcium",
+        "coagulopathy",
+        "massive transfusion",
+        "critical care",
+        "mortality"
+      ],
+      "new_tags": [
+        "trauma",
+        "hemorrhagic_shock",
+        "hypocalcemia",
+        "ionized_calcium",
+        "coagulopathy",
+        "massive_transfusion",
+        "critical_care",
+        "mortality_risk"
+      ]
+    },
+    {
+      "old_path": "treatment-of-hemorrhagic-shock-irreversible-to-transfusion.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/classic_irreversibility/treatment_of_hemorrhagic_shock_irreversible_to_transfusion.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "irreversible shock",
+        "cardiovascular collapse",
+        "resuscitation",
+        "transfusion",
+        "volume resuscitation",
+        "vasopressors",
+        "liver function",
+        "experimental dog model",
+        "albumin infusion"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "irreversible_shock",
+        "cardiovascular_collapse",
+        "resuscitation",
+        "transfusion",
+        "volume_resuscitation",
+        "vasopressors",
+        "liver_function",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "superoxide-and-h2o2-in-the-vascular-lumen.md",
+      "new_path": "metabolism_mitochondria_and_redox/redox_signaling/superoxide_and_h2o2_in_the_vascular_lumen.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac failure",
+        "vascular biology",
+        "redox signaling",
+        "superoxide",
+        "hydrogen peroxide",
+        "endothelium",
+        "mathematical modeling",
+        "microcirculation",
+        "oxidative stress"
+      ],
+      "new_tags": [
+        "vascular_biology",
+        "redox_signaling",
+        "superoxide",
+        "hydrogen_peroxide",
+        "endothelium",
+        "mathematical_modeling",
+        "microcirculation",
+        "oxidative_stress"
+      ]
+    },
+    {
+      "old_path": "plasma-metabolites-in-combat-hemorrhagic-trauma.md",
+      "new_path": "metabolism_mitochondria_and_redox/biomarkers/plasma_metabolites_in_combat_hemorrhagic_trauma.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "combat trauma",
+        "metabolomics",
+        "succinate",
+        "hypoxanthine",
+        "5-aminolevulinate",
+        "biomarkers",
+        "ischemia-reperfusion",
+        "triage",
+        "cardiovascular failure"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "combat_trauma",
+        "metabolomics",
+        "succinate",
+        "hypoxanthine",
+        "5_aminolevulinate",
+        "biomarkers",
+        "ischemia_reperfusion",
+        "triage",
+        "cardiovascular_failure"
+      ]
+    },
+    {
+      "old_path": "hemorrhagic-shock-coronary-flow-reversal-and-lv-function.md",
+      "new_path": "heart_in_shock_and_ischemia/coronary_flow/hemorrhagic_shock_coronary_flow_reversal_and_lv_function.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "exsanguination cardiac arrest",
+        "coronary flow",
+        "diastolic flow reversal",
+        "left ventricular function",
+        "pressure-volume loops",
+        "swine model",
+        "preload recruitable stroke work",
+        "systemic vascular resistance",
+        "resuscitation physiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "exsanguination_cardiac_arrest",
+        "coronary_flow",
+        "diastolic_flow_reversal",
+        "left_ventricular_function",
+        "pressure_volume_loops",
+        "swine_model",
+        "resuscitation_physiology"
+      ]
+    },
+    {
+      "old_path": "time-and-reversibility-of-myocardial-metabolic-changes-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/myocardial_metabolism/time_and_reversibility_of_myocardial_metabolic_changes_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial metabolism",
+        "cardiac failure",
+        "oxygen extraction",
+        "lactate",
+        "pyruvate",
+        "irreversible shock",
+        "canine model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_metabolism",
+        "cardiac_failure",
+        "oxygen_extraction",
+        "lactate",
+        "pyruvate",
+        "irreversible_shock",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "inflammatory-basis-of-trauma-shock-associated-mof.md",
+      "new_path": "microcirculation_endothelium_and_organs/organ_failure/inflammatory_basis_of_trauma_shock_associated_mof.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "multiple organ failure",
+        "systemic inflammatory response",
+        "sepsis",
+        "neutrophils",
+        "complement",
+        "cytokines",
+        "endothelium",
+        "adhesion molecules",
+        "gut hypothesis",
+        "bacterial translocation",
+        "endotoxemia"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "multiple_organ_failure",
+        "systemic_inflammatory_response",
+        "sepsis",
+        "neutrophils",
+        "complement",
+        "cytokines",
+        "endothelium",
+        "adhesion_molecules",
+        "gut_hypothesis",
+        "bacterial_translocation",
+        "endotoxemia"
+      ]
+    },
+    {
+      "old_path": "resuscitation-associated-endotheliopathy-rase.md",
+      "new_path": "microcirculation_endothelium_and_organs/endotheliopathy/resuscitation_associated_endotheliopathy_rase.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "resuscitation-associated endotheliopathy",
+        "RAsE",
+        "shock-induced endotheliopathy",
+        "SHINE",
+        "endothelial dysfunction",
+        "glycocalyx",
+        "microcirculation",
+        "septic shock",
+        "hemorrhagic shock",
+        "cardiogenic shock",
+        "critical care",
+        "biomarkers"
+      ],
+      "new_tags": [
+        "resuscitation_associated_endotheliopathy",
+        "shock_induced_endotheliopathy",
+        "endothelial_dysfunction",
+        "glycocalyx",
+        "microcirculation",
+        "septic_shock",
+        "hemorrhagic_shock",
+        "cardiogenic_shock",
+        "critical_care",
+        "biomarkers"
+      ]
+    },
+    {
+      "old_path": "modelling-myocardial-ischaemia-and-reperfusion.md",
+      "new_path": "metabolism_mitochondria_and_redox/computational_models/modelling_myocardial_ischaemia_and_reperfusion.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "computational model",
+        "myocardial ischaemia",
+        "reperfusion",
+        "cardiac metabolism",
+        "pH regulation",
+        "electrophysiology",
+        "calcium overload",
+        "arrhythmias",
+        "bioenergetics",
+        "Na+/H+ exchange",
+        "Na+/Ca2+ exchange"
+      ],
+      "new_tags": [
+        "computational_model",
+        "myocardial_ischemia",
+        "reperfusion",
+        "cardiac_metabolism",
+        "ph_regulation",
+        "electrophysiology",
+        "calcium_overload",
+        "arrhythmias",
+        "bioenergetics"
+      ]
+    },
+    {
+      "old_path": "cineangiocardiography-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/cardiac_mechanics/cineangiocardiography_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "left ventricular function",
+        "cineangiocardiography",
+        "intraventricular pressure gradients",
+        "subendocardial injury",
+        "experimental cardiology",
+        "canine model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "left_ventricular_function",
+        "cineangiocardiography",
+        "intraventricular_pressure_gradients",
+        "subendocardial_injury",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "microcirculation-in-hemorrhagic-shock.md",
+      "new_path": "microcirculation_endothelium_and_organs/skeletal_muscle/microcirculation_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "microcirculation",
+        "skeletal muscle",
+        "microvascular perfusion",
+        "leukocyte plugging",
+        "blood-tissue exchange",
+        "interstitial fluid shifts",
+        "tissue oxygenation",
+        "cell membrane potential",
+        "shock resuscitation",
+        "hypertonic therapy",
+        "ATP-MgCl2",
+        "steroids",
+        "critical care monitoring"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "microcirculation",
+        "skeletal_muscle",
+        "leukocyte_plugging",
+        "blood_tissue_exchange",
+        "interstitial_fluid_shifts",
+        "tissue_oxygenation",
+        "shock_resuscitation",
+        "hypertonic_therapy",
+        "steroids"
+      ]
+    },
+    {
+      "old_path": "resuscitation-from-severe-hemorrhage.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/clinical_strategies/resuscitation_from_severe_hemorrhage.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "uncontrolled hemorrhage",
+        "trauma",
+        "combat casualty care",
+        "resuscitation strategies",
+        "hypotensive resuscitation",
+        "fluid therapy",
+        "blood substitutes",
+        "hypertonic saline",
+        "stroma-free hemoglobin",
+        "perfluorocarbons",
+        "monitoring",
+        "lactate",
+        "hypothermia"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "uncontrolled_hemorrhage",
+        "trauma",
+        "combat_casualty_care",
+        "resuscitation_strategies",
+        "hypotensive_resuscitation",
+        "blood_substitutes",
+        "hypertonic_saline",
+        "hemoglobin_based_oxygen_carriers",
+        "perfluorocarbons",
+        "monitoring",
+        "lactate",
+        "hypothermia"
+      ]
+    },
+    {
+      "old_path": "experimental-models-of-hemorrhagic-shock.md",
+      "new_path": "models_methods_and_monitoring/animal_models/experimental_models_of_hemorrhagic_shock.md",
+      "hub_ids": [
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "animal models",
+        "fixed-volume hemorrhage",
+        "fixed-pressure hemorrhage",
+        "uncontrolled hemorrhage",
+        "oxygen debt",
+        "trauma",
+        "ischemia-reperfusion"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "animal_models",
+        "fixed_volume_hemorrhage",
+        "fixed_pressure_hemorrhage",
+        "uncontrolled_hemorrhage",
+        "oxygen_debt",
+        "trauma",
+        "ischemia_reperfusion"
+      ]
+    },
+    {
+      "old_path": "isoproterenol-in-hemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/pharmacology/isoproterenol_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "beta-adrenergic agonists",
+        "isoproterenol",
+        "cardiac output",
+        "mesenteric perfusion",
+        "oxygen consumption",
+        "animal model",
+        "dog"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "beta_agonists",
+        "isoproterenol",
+        "cardiac_output",
+        "mesenteric_perfusion",
+        "oxygen_consumption",
+        "dog_model"
+      ]
+    },
+    {
+      "old_path": "af-in-trauma-patients-requiring-icu-care.md",
+      "new_path": "heart_in_shock_and_ischemia/arrhythmias/af_in_trauma_patients_requiring_icu_care.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "atrial fibrillation",
+        "trauma",
+        "intensive care",
+        "systemic inflammatory response syndrome",
+        "catecholamines",
+        "shock",
+        "cardiac arrhythmia",
+        "critical care outcomes"
+      ],
+      "new_tags": [
+        "atrial_fibrillation",
+        "trauma",
+        "intensive_care",
+        "systemic_inflammatory_response",
+        "catecholamines",
+        "shock",
+        "cardiac_arrhythmias",
+        "critical_care_outcomes"
+      ]
+    },
+    {
+      "old_path": "circulatory-responses-to-hemorrhage-in-the-dog.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/physiology/circulatory_responses_to_hemorrhage_in_the_dog.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac output",
+        "systemic vascular resistance",
+        "canine model",
+        "hemodynamics",
+        "oxygen transport",
+        "venous return"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_output",
+        "systemic_vascular_resistance",
+        "canine_model",
+        "hemodynamics",
+        "oxygen_transport",
+        "venous_return"
+      ]
+    },
+    {
+      "old_path": "metabolism-of-cardiac-muscle-in-shock.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_metabolism/metabolism_of_cardiac_muscle_in_shock.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "traumatic shock",
+        "cardiac metabolism",
+        "myocardial energetics",
+        "oxygen consumption",
+        "glycogen",
+        "lactate",
+        "pyruvate",
+        "potassium",
+        "iodoacetate"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "traumatic_shock",
+        "cardiac_metabolism",
+        "myocardial_energetics",
+        "oxygen_consumption",
+        "glycogen",
+        "lactate",
+        "pyruvate"
+      ]
+    },
+    {
+      "old_path": "oxygen-myocardial-flow-metabolism-in-hemorrhagic-shock-dogs.md",
+      "new_path": "heart_in_shock_and_ischemia/therapies/oxygen_myocardial_flow_metabolism_in_hemorrhagic_shock_dogs.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "myocardial blood flow",
+        "myocardial oxygen consumption",
+        "hyperbaric oxygen",
+        "xenon-133 washout",
+        "coronary circulation",
+        "canine model",
+        "cardiovascular physiology"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "myocardial_blood_flow",
+        "myocardial_oxygen_consumption",
+        "hyperbaric_oxygen",
+        "coronary_circulation",
+        "canine_model"
+      ]
+    },
+    {
+      "old_path": "mechanisms-of-secondary-cardiac-dysfunction-in-trauma-hemorrhage.md",
+      "new_path": "heart_in_shock_and_ischemia/post_traumatic_cardiomyopathy/mechanisms_of_secondary_cardiac_dysfunction_in_trauma_hemorrhage.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "trauma-induced secondary cardiac injury",
+        "hemorrhagic shock",
+        "cardiac dysfunction",
+        "innate immunity",
+        "sterile inflammation",
+        "animal models",
+        "myocardial apoptosis",
+        "hemodynamic dysfunction"
+      ],
+      "new_tags": [
+        "trauma_induced_secondary_cardiac_injury",
+        "hemorrhagic_shock",
+        "cardiac_dysfunction",
+        "innate_immunity",
+        "sterile_inflammation",
+        "animal_models",
+        "myocardial_apoptosis"
+      ]
+    },
+    {
+      "old_path": "endotoxin-tnf-kinetics-after-hemorrhagic-shock-in-rats.md",
+      "new_path": "microcirculation_endothelium_and_organs/gut_liver_axis/endotoxin_tnf_kinetics_after_hemorrhagic_shock_in_rats.md",
+      "hub_ids": [
+        "microcirculation_endothelium_and_organs"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "endotoxemia",
+        "tumor necrosis factor",
+        "bacterial translocation",
+        "gut-liver axis",
+        "portal circulation",
+        "systemic inflammation",
+        "rat model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "endotoxemia",
+        "tnf",
+        "bacterial_translocation",
+        "gut_liver_axis",
+        "portal_circulation",
+        "systemic_inflammation",
+        "rat_model"
+      ]
+    },
+    {
+      "old_path": "combined-adrenergic-blockade-in-hemorrhagic-hypotension.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/pharmacology/combined_adrenergic_blockade_in_hemorrhagic_hypotension.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "hemorrhagic hypotension",
+        "adrenergic blockade",
+        "alpha-blockade",
+        "beta-blockade",
+        "combined alpha-beta blockade",
+        "dog model",
+        "metabolic acidosis",
+        "plasma volume",
+        "microcirculation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "hemorrhagic_hypotension",
+        "adrenergic_blockade",
+        "alpha_blockade",
+        "beta_blockade",
+        "combined_blockade",
+        "dog_model",
+        "metabolic_acidosis",
+        "plasma_volume"
+      ]
+    },
+    {
+      "old_path": "electrophysiology-of-hypo-and-hyperkalemia.md",
+      "new_path": "heart_in_shock_and_ischemia/electrophysiology/electrophysiology_of_hypo_and_hyperkalemia.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hypokalemia",
+        "hyperkalemia",
+        "potassium",
+        "cardiac electrophysiology",
+        "ventricular arrhythmias",
+        "ventricular fibrillation",
+        "torsades de pointes",
+        "myocardial ischemia",
+        "Na-K ATPase",
+        "CaMKII",
+        "early afterdepolarizations",
+        "delayed afterdepolarizations",
+        "phase 2 reentry"
+      ],
+      "new_tags": [
+        "hypokalemia",
+        "hyperkalemia",
+        "cardiac_electrophysiology",
+        "ventricular_arrhythmias",
+        "ventricular_fibrillation",
+        "torsades_de_pointes",
+        "myocardial_ischemia"
+      ]
+    },
+    {
+      "old_path": "papillary-muscle-function-in-postoligemic-shock-cat.md",
+      "new_path": "heart_in_shock_and_ischemia/contractility/papillary_muscle_function_in_postoligemic_shock_cat.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "postoligemic shock",
+        "myocardial depression",
+        "papillary muscle",
+        "cardiac contractility",
+        "catecholamines",
+        "angiotensin II",
+        "ouabain",
+        "experimental cardiology",
+        "cat model"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "postoligemic_shock",
+        "myocardial_depression",
+        "papillary_muscle",
+        "cardiac_contractility",
+        "catecholamines",
+        "angiotensin_ii",
+        "ouabain",
+        "cat_model"
+      ]
+    },
+    {
+      "old_path": "saap-vs-open-cardiac-massage-in-exsanguination-arrest.md",
+      "new_path": "heart_in_shock_and_ischemia/exsanguination/saap_vs_open_cardiac_massage_in_exsanguination_arrest.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "exsanguination cardiac arrest",
+        "selective aortic arch perfusion",
+        "open cardiac massage",
+        "resuscitative thoracotomy",
+        "coronary perfusion pressure",
+        "porcine model",
+        "endovascular resuscitation"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "exsanguination_cardiac_arrest",
+        "selective_aortic_arch_perfusion",
+        "open_cardiac_massage",
+        "resuscitative_thoracotomy",
+        "coronary_perfusion_pressure",
+        "swine_model",
+        "endovascular_resuscitation"
+      ]
+    },
+    {
+      "old_path": "contraction-band-vs-coagulation-necrosis-in-porcine-reperfusion.md",
+      "new_path": "heart_in_shock_and_ischemia/myocardial_pathology/contraction_band_vs_coagulation_necrosis_in_por cine_reperfusion.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia",
+        "metabolism_mitochondria_and_redox"
+      ],
+      "old_tags": [
+        "porcine model",
+        "myocardial infarction",
+        "ischemia-reperfusion",
+        "contraction band necrosis",
+        "coagulation necrosis",
+        "no-reflow",
+        "reperfusion injury",
+        "risk area",
+        "coronary thrombosis",
+        "cardiac pathology"
+      ],
+      "new_tags": [
+        "porcine_model",
+        "myocardial_infarction",
+        "ischemia_reperfusion",
+        "contraction_band_necrosis",
+        "coagulation_necrosis",
+        "no_reflow",
+        "reperfusion_injury",
+        "cardiac_pathology"
+      ]
+    },
+    {
+      "old_path": "exsanguination-shock-and-battlefield-mortality.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/battlefield_mortality/exsanguination_shock_and_battlefield_mortality.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "exsanguination shock",
+        "battlefield trauma",
+        "combat casualty care",
+        "cardiovascular collapse",
+        "resuscitation failure",
+        "trauma systems"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "exsanguination_shock",
+        "battlefield_trauma",
+        "combat_casualty_care",
+        "cardiovascular_collapse",
+        "resuscitation_failure",
+        "trauma_systems"
+      ]
+    },
+    {
+      "old_path": "tachycardia-and-mortality-in-trauma-haemorrhagic-shock.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/clinical_strategies/tachycardia_and_mortality_in_trauma_hemorrhagic_shock.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "trauma",
+        "hemorrhagic shock",
+        "tachycardia",
+        "heart rate",
+        "mortality prediction",
+        "ATLS",
+        "vital signs",
+        "systematic review",
+        "meta-regression"
+      ],
+      "new_tags": [
+        "trauma",
+        "hemorrhagic_shock",
+        "tachycardia",
+        "heart_rate",
+        "mortality_prediction",
+        "atls",
+        "vital_signs",
+        "systematic_review"
+      ]
+    },
+    {
+      "old_path": "stellate-stimulation-myocardial-catecholamines-in-hemorrhagic-shock.md",
+      "new_path": "heart_in_shock_and_ischemia/autonomic_control/stellate_stimulation_and_myocardial_catecholamines_in_hemorrhagic_shock.md",
+      "hub_ids": [
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac function",
+        "sympathetic nervous system",
+        "stellate ganglion",
+        "myocardial catecholamines",
+        "norepinephrine",
+        "dog model",
+        "vagus nerve"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "cardiac_function",
+        "sympathetic_regulation",
+        "stellate_ganglion",
+        "myocardial_catecholamines",
+        "norepinephrine",
+        "dog_model",
+        "vagal_function"
+      ]
+    },
+    {
+      "old_path": "mathematical-model-of-hemorrhagic-shock.md",
+      "new_path": "models_methods_and_monitoring/cardiovascular_models/mathematical_model_of_hemorrhagic_shock.md",
+      "hub_ids": [
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "trauma",
+        "triage",
+        "mathematical modeling",
+        "hemodynamics",
+        "neurologic function",
+        "acid-base balance",
+        "critical care",
+        "prognostication"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "trauma",
+        "triage",
+        "mathematical_modeling",
+        "hemodynamics",
+        "neurologic_function",
+        "acid_base_balance",
+        "prognostication"
+      ]
+    },
+    {
+      "old_path": "cardiovascular-effects-of-full-vs-partial-reboa.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/endovascular/cardiovascular_effects_of_full_vs_partial_reboa.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "resuscitative endovascular balloon occlusion of the aorta",
+        "REBOA",
+        "partial REBOA",
+        "pressure-volume loops",
+        "coronary blood flow",
+        "afterload",
+        "cardiac injury",
+        "swine model",
+        "non-compressible torso hemorrhage"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "reboa",
+        "partial_reboa",
+        "pressure_volume_loops",
+        "coronary_blood_flow",
+        "afterload",
+        "cardiac_injury",
+        "swine_model",
+        "noncompressible_torso_hemorrhage"
+      ]
+    },
+    {
+      "old_path": "propranolol-and-myocardial-glycogenolysis-in-ischemia.md",
+      "new_path": "metabolism_mitochondria_and_redox/myocardial_metabolism/propranolol_and_myocardial_glycogenolysis_in_ischemia.md",
+      "hub_ids": [
+        "metabolism_mitochondria_and_redox",
+        "heart_in_shock_and_ischemia"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "cardiac ischemia",
+        "heart failure",
+        "propranolol",
+        "beta-adrenergic blockade",
+        "glycogenolysis",
+        "myocardial metabolism",
+        "dog model",
+        "endocardium",
+        "epicardium"
+      ],
+      "new_tags": [
+        "cardiac_ischemia",
+        "heart_failure",
+        "propranolol",
+        "beta_blockade",
+        "glycogenolysis",
+        "myocardial_metabolism",
+        "dog_model"
+      ]
+    },
+    {
+      "old_path": "transport-time-pre-or-hemostatic-interventions-in-truncal-injury.md",
+      "new_path": "hemorrhagic_shock_and_resuscitation/trauma_systems/transport_time_and_pre_or_hemostatic_interventions_in_truncal_injury.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [
+        "hemorrhagic shock",
+        "truncal hemorrhage",
+        "prehospital care",
+        "trauma systems",
+        "resuscitation",
+        "whole blood",
+        "REBOA",
+        "damage control resuscitation",
+        "military trauma",
+        "civilian trauma"
+      ],
+      "new_tags": [
+        "hemorrhagic_shock",
+        "truncal_hemorrhage",
+        "prehospital_care",
+        "trauma_systems",
+        "resuscitation",
+        "whole_blood",
+        "reboa",
+        "damage_control_resuscitation",
+        "military_trauma",
+        "civilian_trauma"
+      ]
+    },
+    {
+      "old_path": "home.md",
+      "new_path": "home.md",
+      "hub_ids": [
+        "hemorrhagic_shock_and_resuscitation",
+        "heart_in_shock_and_ischemia",
+        "microcirculation_endothelium_and_organs",
+        "metabolism_mitochondria_and_redox",
+        "models_methods_and_monitoring"
+      ],
+      "old_tags": [],
+      "new_tags": []
+    }
+  ]
+}
