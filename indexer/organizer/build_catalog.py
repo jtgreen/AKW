@@ -9,13 +9,14 @@ import os
 import re
 from datetime import date, datetime, time
 from pathlib import Path
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Set
 
 import yaml
 
 DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
+IGNORE_FILE = Path(__file__).resolve().parents[1] / "organizer.ignore.json"
 SUMMARY_RE = re.compile(r"\*\*One-sentence takeaway:\*\*\s*(.+)", re.IGNORECASE)
 KEY_POINTS_HEADER_RE = re.compile(r"^#{2,6}\s+key points\s*$", re.IGNORECASE)
 
@@ -77,11 +78,14 @@ def normalize_tags(raw) -> list[str]:
     return []
 
 
-def walk_markdown_files(repo_root: Path) -> Iterable[Path]:
+def walk_markdown_files(repo_root: Path, ignore_set: Set[str]) -> Iterable[Path]:
     for path in repo_root.rglob("*.md"):
         rel = path.relative_to(repo_root)
         top_level = rel.parts[0] if rel.parts else ""
         if top_level.startswith("_") or top_level.startswith("."):
+            continue
+        rel_posix = rel.as_posix()
+        if rel_posix in ignore_set or path.name in ignore_set:
             continue
         yield path
 
@@ -142,8 +146,9 @@ def extract_summary_and_key_points(body: str) -> Tuple[str, list[str]]:
 
 
 def build_catalog(repo_root: Path) -> dict:
+    ignore_set = load_ignore_list()
     docs = []
-    for path in walk_markdown_files(repo_root):
+    for path in walk_markdown_files(repo_root, ignore_set):
         rel = path.relative_to(repo_root).as_posix()
         text = path.read_text(encoding="utf-8")
         front_matter, body = parse_front_matter(text)
@@ -182,3 +187,13 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+def load_ignore_list() -> Set[str]:
+    if IGNORE_FILE.exists():
+        try:
+            data = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
+            entries = data.get("ignore") or []
+            normalized = {entry.strip() for entry in entries if entry and entry.strip()}
+            return normalized
+        except json.JSONDecodeError:
+            print(f"Warning: {IGNORE_FILE} is not valid JSON; ignoring.")
+    return set()

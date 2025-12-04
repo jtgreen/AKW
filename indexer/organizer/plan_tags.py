@@ -19,6 +19,7 @@ DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
 DEFAULT_MAX_TAGS = 150
 DEFAULT_MAX_TAGS_PER_DOC = 5
+IGNORE_FILE = Path(__file__).resolve().parents[1] / "organizer.ignore.json"
 SYSTEM_PROMPT_TEMPLATE = """You are a taxonomy editor for the BSOS wiki.
 
 Given a list of documents with existing tags, summaries, and key points, produce:
@@ -114,6 +115,18 @@ def load_repo_root(cli_value: Path | None) -> Path:
     return DEFAULT_REPO_ROOT
 
 
+def load_ignore_list() -> set[str]:
+    if IGNORE_FILE.exists():
+        try:
+            data = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
+            entries = data.get("ignore") or []
+            normalized = {entry.strip() for entry in entries if entry and entry.strip()}
+            return normalized
+        except json.JSONDecodeError:
+            print(f"Warning: {IGNORE_FILE} is not valid JSON; ignoring.")
+    return set()
+
+
 def repo_slug(repo_root: Path) -> str:
     return "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in repo_root.name) or "repo"
 
@@ -162,12 +175,15 @@ def dedupe(seq: List[str]) -> List[str]:
     return out
 
 
-def prepare_docs_payload(catalog: dict) -> list[dict]:
+def prepare_docs_payload(catalog: dict, ignore_set: set[str]) -> list[dict]:
     docs_payload = []
     for doc in catalog.get("docs", []):
+        path = doc.get("path")
+        if path in ignore_set or Path(path).name in ignore_set:
+            continue
         docs_payload.append(
             {
-                "path": doc.get("path"),
+                "path": path,
                 "title": doc.get("title"),
                 "existing_tags": doc.get("tags"),
                 "one_sentence_takeaway": doc.get("one_sentence_takeaway"),
@@ -333,8 +349,9 @@ def main() -> None:
     if not catalog_path.exists():
         raise SystemExit(f"Catalog not found: {catalog_path}")
 
+    ignore_set = load_ignore_list()
     catalog = load_catalog(catalog_path)
-    docs_payload = prepare_docs_payload(catalog)
+    docs_payload = prepare_docs_payload(catalog, ignore_set)
     existing_tags = {
         canonicalize_tag(tag)
         for doc in catalog.get("docs", [])
