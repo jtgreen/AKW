@@ -16,7 +16,7 @@ if not OPENAI_API_KEY:
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 ROOT = Path(__file__).resolve().parent
-CONFIG = yaml.safe_load(("config.yaml").read_text())
+CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
 VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
 
 SYSTEM_PROMPT = """You are the Battle Field Shock and Organ Support Wiki Research Assistant.
