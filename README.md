@@ -18,6 +18,8 @@ knowledge-wiki/
 
 Wiki.js aggressively purges unknown files from `/uploads`, so ingestion now targets a dedicated directory per wiki (`/opt/<wiki-name>-pdfs`) that Caddy serves at `https://<domain>/pdfs/...`. Point `--pdf-upload` (or the new `batch_ingest.py --pdf-upload-target`) at that path so PDFs survive purges and stay aligned with the Markdown summaries.
 
+When you rebuild embeddings via `indexer/indexer_stub.py`, set `pdf_assets.local_dir` in `indexer/config.yaml` to that same directory (e.g., `/opt/bsos-wiki-pdfs`). The stub will automatically pull the uploaded `.txt` companions from there so the vector store contains both the Markdown summaries and the extracted PDF text.
+
 ## Prerequisites for Local Ingestion
 
 If you plan to run the `client_ingest` scripts on your laptop, install the OCR dependencies before running `batch_ingest.py`:

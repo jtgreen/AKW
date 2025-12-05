@@ -7,6 +7,7 @@ import re
 import yaml
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
+from urllib.parse import urlparse
 from openai import OpenAI
 
 from dotenv import load_dotenv
@@ -27,6 +28,14 @@ REPO_ROOT = Path(CONFIG["wiki_repo_root"])
 OPENAI_CFG = CONFIG.get("openai", {})
 VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
 STATE_PATH = ROOT / ".indexer_state.json"
+PDF_ASSETS_CFG = CONFIG.get("pdf_assets", {}) or {}
+PDF_TEXT_ROOT: Optional[Path] = None
+if PDF_ASSETS_CFG.get("local_dir"):
+    candidate = Path(PDF_ASSETS_CFG["local_dir"]).expanduser()
+    if candidate.exists():
+        PDF_TEXT_ROOT = candidate.resolve()
+    else:
+        print(f"Warning: pdf_assets.local_dir '{candidate}' not found; PDF text files will be skipped.")
 
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
@@ -175,6 +184,22 @@ def normalize_tags(raw) -> List[str]:
     return []
 
 
+def find_pdf_text_candidate(md_path: Path, pdf_text_url: Optional[str]) -> Optional[Path]:
+    """Return a Path to the extracted PDF text file if we can find one."""
+    sibling = md_path.with_suffix(".txt")
+    if sibling.exists():
+        return sibling
+
+    if pdf_text_url and PDF_TEXT_ROOT:
+        parsed = urlparse(pdf_text_url)
+        name = Path(parsed.path).name
+        if name:
+            candidate = PDF_TEXT_ROOT / name
+            if candidate.exists():
+                return candidate
+    return None
+
+
 def build_documents(md_path: Path) -> List[WikiDocument]:
     text = md_path.read_text(encoding="utf-8")
     fm, body = parse_front_matter(text)
@@ -217,8 +242,8 @@ def build_documents(md_path: Path) -> List[WikiDocument]:
         )
     )
 
-    text_path = md_path.with_name(md_path.stem + ".txt")
-    if text_path.exists():
+    text_path = find_pdf_text_candidate(md_path, pdf_text_url)
+    if text_path and text_path.exists():
         pdf_text = text_path.read_text(encoding="utf-8", errors="ignore").strip()
         if pdf_text:
             pdf_doc = WikiDocument(

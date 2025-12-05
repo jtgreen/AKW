@@ -5,3 +5,7 @@ openai:
   vector_store_name: "bsos-wiki-store"
   assistant_name: "bsos-wiki-assistant"
   vector_store_id: "vs_692f1a1149948191917dc3873ca9ba06"   # to be filled in once you create it
+
+pdf_assets:
+  # Local directory where ingest uploads stash PDFs + extracted text (scp target from ingest_paper/batch_ingest)
+  local_dir: "/opt/bsos-wiki-pdfs"
