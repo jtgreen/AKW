@@ -16,7 +16,6 @@ __pycache__/
 
 # Logs
 *.log
-*.txt
 
 # Uploads
 uploaded_pdf_raw_renamed/
