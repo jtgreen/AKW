@@ -19,11 +19,11 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-FAILURE_LOG_PATH = Path(__file__).with_name("failed_pdfs.txt")
+FAILURE_LOG_PATH = Path(__file__).with_name("failed_pdfs.log")
 FAILURE_PAYLOAD_START = "===INGEST_FAILURE_PAYLOAD_START==="
 FAILURE_PAYLOAD_END = "===INGEST_FAILURE_PAYLOAD_END==="
 
-DEFAULT_STATE_FILE = Path(__file__).with_name("batch_ingested.txt")
+DEFAULT_STATE_FILE = Path(__file__).with_name("batch_ingested.log")
 DEFAULT_INGEST_SCRIPT = Path(__file__).with_name("ingest_paper.py")
 
 

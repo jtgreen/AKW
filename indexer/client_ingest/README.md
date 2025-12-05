@@ -68,7 +68,7 @@ python batch_ingest.py "/path/to/papers" -- \
 Behavior:
 
 - Recurses through the directory, passing every `.pdf` to `ingest_paper.py`.  
-- Remembers successes via `batch_ingested.txt` so reruns skip already-processed files.  
+- Remembers successes via `batch_ingested.log` so reruns skip already-processed files.  
 - Logs failures (with reason + payload) to `failed_pdfs.txt`, then keeps going.  
 - Any options placed after `--` are forwarded verbatim to `ingest_paper.py` (so you can tweak `--doc-id`, `--wiki-root`, etc.).
 
@@ -89,7 +89,7 @@ Behavior:
 
 The `.gitignore` in this folder already excludes:
 
-- `batch_ingested.txt` and `failed_pdfs.txt` (state)  
+- `batch_ingested.log` and `failed_pdfs.log` (state)  
 - Local logs (`ingest.log`, etc.)  
 - `__pycache__/`, `tmp.fix`, and other build debris
 
