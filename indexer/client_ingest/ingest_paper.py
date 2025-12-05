@@ -24,11 +24,35 @@ import posixpath
 import re
 import shlex
 
+from dotenv import load_dotenv
 from openai import OpenAI
 from pypdf import PdfReader
 from pypdf.errors import PdfReadWarning
 import yaml
 
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def load_env_files() -> None:
+    """
+    Load environment variables from nearby .env files without overriding
+    anything that is already set in the shell.
+    """
+    searched = [
+        SCRIPT_DIR / ".env",
+        SCRIPT_DIR.parent / ".env",
+        SCRIPT_DIR.parent.parent / ".env",
+    ]
+    loaded_any = False
+    for candidate in searched:
+        if load_dotenv(candidate, override=False):
+            loaded_any = True
+    if not loaded_any:
+        load_dotenv(override=False)
+
+
+load_env_files()
 
 DEFAULT_MODEL = "gpt-5.1"
 DEFAULT_DOC_KIND = "wiki"
