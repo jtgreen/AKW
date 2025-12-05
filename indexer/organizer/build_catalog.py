@@ -21,6 +21,18 @@ SUMMARY_RE = re.compile(r"\*\*One-sentence takeaway:\*\*\s*(.+)", re.IGNORECASE)
 KEY_POINTS_HEADER_RE = re.compile(r"^#{2,6}\s+key points\s*$", re.IGNORECASE)
 
 
+def load_ignore_list() -> Set[str]:
+    if IGNORE_FILE.exists():
+        try:
+            data = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
+            entries = data.get("ignore") or []
+            normalized = {entry.strip() for entry in entries if entry and entry.strip()}
+            return normalized
+        except json.JSONDecodeError:
+            print(f"Warning: {IGNORE_FILE} is not valid JSON; ignoring.")
+    return set()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Scan a wiki repo and emit an organizer catalog JSON."
@@ -187,13 +199,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-def load_ignore_list() -> Set[str]:
-    if IGNORE_FILE.exists():
-        try:
-            data = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
-            entries = data.get("ignore") or []
-            normalized = {entry.strip() for entry in entries if entry and entry.strip()}
-            return normalized
-        except json.JSONDecodeError:
-            print(f"Warning: {IGNORE_FILE} is not valid JSON; ignoring.")
-    return set()
