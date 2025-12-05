@@ -22,7 +22,7 @@ bsos.wiki {
 
     # Serve ingest-managed PDFs outside Wiki.js' uploads directory
     handle_path /pdfs/* {
-        root * /opt/bsos-wiki/pdfs
+        root * /opt/bsos-wiki-pdfs
         file_server
     }
 
