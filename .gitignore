@@ -13,3 +13,10 @@ __pycache__/
 *.swp
 *.swo
 .DS_Store
+
+# Logs
+*.log
+
+# Uploads
+uploaded_pdf_raw_renamed/
+uploaded_pdf_text/

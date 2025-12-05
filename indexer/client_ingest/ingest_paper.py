@@ -17,7 +17,7 @@ import tempfile
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple, Set
 
 import math
 import posixpath
@@ -54,9 +54,13 @@ PLACEHOLDER_TOKENS = [
 ]
 DEFAULT_LOG_FILE = "ingest.log"
 DEFAULT_STDOUT_LOG_FILE = "ingest_std_out.log"
+DEFAULT_PDF_TEXT_DIR = Path(__file__).with_name("uploaded_pdf_text")
+DEFAULT_PDF_RAW_DIR = Path(__file__).with_name("uploaded_pdf_raw_renamed")
+DOC_ID_CACHE_IGNORE: frozenset[str] | None = None
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
 DOC_ID_CACHE: Dict[str, Path] | None = None
 DOC_ID_CACHE_ROOT: Path | None = None
+DOC_ID_CACHE_IGNORE: frozenset[str] | None = None
 
 
 class IngestLogger:
@@ -74,7 +78,7 @@ class IngestLogger:
             with self.log_path.open("a", encoding="utf-8") as handle:
                 handle.write(line + "\n")
 
-SUMMARY_PROMPT_TEMPLATE = """You are building a research wiki on hemorrhagic shock and cardiac failure.
+SUMMARY_PROMPT_TEMPLATE = """You are building a research wiki on hemorrhagic shock and circulatory failure.
 
 Summarize this paper into a JSON object with fields:
 - title
@@ -210,7 +214,7 @@ def slugify_component(text: str, max_length: int, separator: str = "_") -> str:
 
 
 def derive_slug_from_title(title: str) -> str:
-    slug = slugify_component(title, 120, separator="-").lower()
+    slug = slugify_component(title, 80, separator="-").lower()
     return slug or "page"
 
 
@@ -405,8 +409,24 @@ def write_markdown(
     doc_id: str | None = None,
     kind: str = DEFAULT_DOC_KIND,
 ) -> Path:
-    short_title = str(summary.get("short_title") or summary.get("title") or "Untitled")
-    slug = derive_slug_from_title(short_title)
+    base_slug = derive_slug_from_title(str(summary.get("short_title") or summary.get("title") or "Untitled"))
+    journal = str(summary.get("journal") or "").strip()
+    authors = str(summary.get("authors") or "").strip()
+    year = str(summary.get("year") or "").strip()
+    parts = [base_slug]
+    if authors:
+        parts.append(slugify_component(authors.split(",")[0], 24, separator="-"))
+    if year:
+        parts.append(year)
+    if journal:
+        parts.append(slugify_component(journal, 24, separator="-"))
+    full_slug = "-".join(filter(None, parts))
+    if len(full_slug) <= 120:
+        slug = full_slug
+    else:
+        author_year = "-".join(filter(None, parts[1:]))  # everything except the base title
+        available = max(10, 120 - len(author_year) - 1) if author_year else 120
+        slug = "-".join(filter(None, [base_slug[:available].rstrip("-"), author_year]))
     file_name = f"{slug}.md"
     output_path = base_dir / file_name
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -432,6 +452,22 @@ def resolve_directory(path: Path) -> Path:
     return (Path.cwd() / expanded).resolve()
 
 
+def resolve_pdf_text_dir(path: Path) -> Path:
+    expanded = path.expanduser()
+    if not expanded.is_absolute():
+        expanded = (Path.cwd() / expanded).resolve()
+    expanded.mkdir(parents=True, exist_ok=True)
+    return expanded
+
+
+def resolve_pdf_raw_dir(path: Path) -> Path:
+    expanded = path.expanduser()
+    if not expanded.is_absolute():
+        expanded = (Path.cwd() / expanded).resolve()
+    expanded.mkdir(parents=True, exist_ok=True)
+    return expanded
+
+
 def parse_doc_id_from_file(path: Path) -> str | None:
     try:
         text = path.read_text(encoding="utf-8")
@@ -448,24 +484,40 @@ def parse_doc_id_from_file(path: Path) -> str | None:
     return str(doc_id).strip() if doc_id else None
 
 
-def load_doc_id_registry(root: Path) -> Dict[str, Path]:
-    global DOC_ID_CACHE, DOC_ID_CACHE_ROOT
+def load_doc_id_registry(root: Path, ignore_dirs: Set[str]) -> Dict[str, Path]:
+    global DOC_ID_CACHE, DOC_ID_CACHE_ROOT, DOC_ID_CACHE_IGNORE
     resolved_root = root.resolve()
-    if DOC_ID_CACHE is not None and DOC_ID_CACHE_ROOT == resolved_root:
+    normalized_ignore = {entry.strip("/").lower() for entry in ignore_dirs if entry.strip()}
+    ignore_key = frozenset(normalized_ignore)
+    if (
+        DOC_ID_CACHE is not None
+        and DOC_ID_CACHE_ROOT == resolved_root
+        and DOC_ID_CACHE_IGNORE == ignore_key
+    ):
         return DOC_ID_CACHE
     registry: Dict[str, Path] = {}
     if resolved_root.exists():
         for md_path in resolved_root.rglob("*.md"):
+            rel_parts = md_path.relative_to(resolved_root).parts[:-1]
+            skip = False
+            for part in rel_parts:
+                part_lower = part.lower()
+                if part.startswith(".") or part_lower in normalized_ignore:
+                    skip = True
+                    break
+            if skip:
+                continue
             doc_id = parse_doc_id_from_file(md_path)
             if doc_id and doc_id not in registry:
                 registry[doc_id] = md_path
     DOC_ID_CACHE = registry
     DOC_ID_CACHE_ROOT = resolved_root
+    DOC_ID_CACHE_IGNORE = ignore_key
     return registry
 
 
-def ensure_unique_doc_id(doc_id: str, root: Path) -> None:
-    registry = load_doc_id_registry(root)
+def ensure_unique_doc_id(doc_id: str, root: Path, ignore_dirs: Set[str]) -> None:
+    registry = load_doc_id_registry(root, ignore_dirs)
     existing = registry.get(doc_id)
     if existing:
         raise IngestFailure(
@@ -680,6 +732,24 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
         default=DEFAULT_STDOUT_LOG_FILE,
         help="Path to tee all stdout into (pass '-' to disable stdout capture).",
     )
+    parser.add_argument(
+        "--ignore-dir",
+        action="append",
+        default=[],
+        help="Directory names to ignore when scanning for duplicate doc_ids (e.g., --ignore-dir .git).",
+    )
+    parser.add_argument(
+        "--pdf-text-dir",
+        type=Path,
+        default=DEFAULT_PDF_TEXT_DIR,
+        help="Directory to store extracted PDF text files (defaults to uploaded_pdf_text relative to current dir).",
+    )
+    parser.add_argument(
+        "--pdf-raw-renamed-dir",
+        type=Path,
+        default=DEFAULT_PDF_RAW_DIR,
+        help="Directory to store copies of uploaded PDFs renamed to the normalized filename.",
+    )
     return parser.parse_args(argv)
 
 
@@ -735,6 +805,9 @@ def run_ingest(args: argparse.Namespace) -> int:
     base_dir = resolve_directory(args.base_dir)
     wiki_root = resolve_directory(args.wiki_root) if args.wiki_root else None
     doc_id_scope = wiki_root or base_dir
+    ignore_dirs = {entry.strip("/").lower() for entry in (args.ignore_dir or []) if entry and entry.strip()}
+    pdf_text_dir = resolve_pdf_text_dir(args.pdf_text_dir)
+    pdf_raw_dir = resolve_pdf_raw_dir(args.pdf_raw_renamed_dir) if args.pdf_upload else None
     log_path = None if args.log_file == "-" else Path(args.log_file)
     logger = IngestLogger(log_path)
     logger.log(f"Starting ingest for {args.pdf}", persist=False)
@@ -770,7 +843,7 @@ def run_ingest(args: argparse.Namespace) -> int:
         figure_summaries, figure_usage = summarize_figures(figure_captions, model=args.model)
         wiki_path_prefix = infer_wiki_prefix(base_dir, wiki_root, args.wiki_path_prefix)
         if not args.dry_run and doc_id_scope:
-            ensure_unique_doc_id(doc_id, doc_id_scope)
+            ensure_unique_doc_id(doc_id, doc_id_scope, ignore_dirs)
 
         total_prompt_tokens = summary_usage.get("prompt_tokens", 0) + figure_usage.get("prompt_tokens", 0)
         total_completion_tokens = summary_usage.get("completion_tokens", 0) + figure_usage.get("completion_tokens", 0)
@@ -794,7 +867,8 @@ def run_ingest(args: argparse.Namespace) -> int:
         if pdf_remote_filename and args.pdf_url_base:
             base_url = args.pdf_url_base.rstrip("/")
             pdf_url = f"{base_url}/{pdf_remote_filename}"
-            pdf_text_url = f"{base_url}/{pdf_text_remote_filename}"
+            if pdf_text_remote_filename:
+                pdf_text_url = f"{base_url}/{pdf_text_remote_filename}"
 
         if args.print_json:
             print(json.dumps(summary, indent=2))
@@ -829,7 +903,8 @@ def run_ingest(args: argparse.Namespace) -> int:
             doc_id=doc_id,
             kind=DEFAULT_DOC_KIND,
         )
-        text_output_path = output_path.with_name(output_path.stem + ".txt")
+        text_filename = pdf_text_remote_filename or f"{output_path.stem}.txt"
+        text_output_path = pdf_text_dir / text_filename
         text_output_path.write_text(
             raw_text.strip() + "\n",
             encoding="utf-8",
@@ -837,7 +912,12 @@ def run_ingest(args: argparse.Namespace) -> int:
         if doc_id_scope:
             register_doc_id(doc_id, doc_id_scope, output_path)
         if args.pdf_upload and pdf_remote_filename:
-            upload_pdf(args.pdf, args.pdf_upload, pdf_remote_filename, logger)
+            if pdf_raw_dir:
+                renamed_pdf_path = pdf_raw_dir / pdf_remote_filename
+                renamed_pdf_path.write_bytes(args.pdf.read_bytes())
+                upload_pdf(renamed_pdf_path, args.pdf_upload, pdf_remote_filename, logger)
+            else:
+                upload_pdf(args.pdf, args.pdf_upload, pdf_remote_filename, logger)
             if pdf_text_remote_filename and text_output_path.exists():
                 upload_pdf(text_output_path, args.pdf_upload, pdf_text_remote_filename, logger)
         logger.log(f"Wrote {output_path}")

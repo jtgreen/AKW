@@ -37,6 +37,9 @@ Notable flags (all forward-compatible with the server indexer):
 | `--model` / `--max-chars` | Control which OpenAI model to call and how much text to send (default ≈900k chars). |
 | `--print-json` / `--dry-run` | Inspect the structured JSON or skip writing Markdown altogether. |
 | `--pdf-upload` / `--pdf-url-base` | `scp` the source PDF to the droplet (e.g., `root@167.71.174.28:/opt/bsos-wiki-data/uploads`) and embed a download link such as `https://bsos.wiki/uploads/...`. |
+| `--pdf-text-dir` | Local directory where the extracted PDF plaintext files are stored before upload (defaults to `uploaded_pdf_text/` next to the script). |
+| `--pdf-raw-renamed-dir` | Local directory where the PDF is copied/renamed to the canonical filename before SCP (defaults to `uploaded_pdf_raw_renamed/`). |
+| `--ignore-dir` | Repeatable; skip these directory names when checking for duplicate `doc_id`s (e.g., `.git`). |
 | `--input-cost-per-1k`, `--output-cost-per-1k` | Override USD pricing if you’re on negotiated OpenAI rates. |
 | `--log-file` | Defaults to `ingest.log`; pass `-` to disable file logging. |
 
