@@ -294,6 +294,7 @@ def derive_doc_id(summary: Dict[str, Any], explicit: str | None = None) -> str:
 def build_markdown(
     summary: Dict[str, Any],
     pdf_url: str | None = None,
+    pdf_text_url: str | None = None,
     figure_summaries: List[Dict[str, str]] | None = None,
     slug: str | None = None,
     wiki_path: str | None = None,
@@ -337,6 +338,8 @@ def build_markdown(
         front_matter_lines.append(f"slug: {json.dumps(slug)}")
     if pdf_url:
         front_matter_lines.append(f"pdf_url: {json.dumps(pdf_url)}")
+    if pdf_text_url:
+        front_matter_lines.append(f"pdf_text_url: {json.dumps(pdf_text_url)}")
     front_matter_lines.append("---")
     front_matter = "\n".join(front_matter_lines)
 
@@ -396,6 +399,7 @@ def write_markdown(
     summary: Dict[str, Any],
     base_dir: Path,
     pdf_url: str | None = None,
+    pdf_text_url: str | None = None,
     figure_summaries: List[Dict[str, str]] | None = None,
     wiki_path_prefix: str | None = None,
     doc_id: str | None = None,
@@ -410,6 +414,7 @@ def write_markdown(
     markdown = build_markdown(
         summary,
         pdf_url=pdf_url,
+        pdf_text_url=pdf_text_url,
         figure_summaries=figure_summaries,
         slug=slug,
         wiki_path=wiki_path,
@@ -778,12 +783,18 @@ def run_ingest(args: argparse.Namespace) -> int:
             output_cost_override=args.output_cost_per_1k,
         )
 
+        pdf_remote_filename = None
+        pdf_text_remote_filename = None
         pdf_url = None
+        pdf_text_url = None
         if args.pdf_upload:
             pdf_remote_filename = build_pdf_filename(summary, args.pdf.suffix or ".pdf")
-            upload_pdf(args.pdf, args.pdf_upload, pdf_remote_filename, logger)
-            if args.pdf_url_base:
-                pdf_url = f"{args.pdf_url_base.rstrip('/')}/{pdf_remote_filename}"
+            stem = Path(pdf_remote_filename).stem
+            pdf_text_remote_filename = f"{stem}.txt"
+        if pdf_remote_filename and args.pdf_url_base:
+            base_url = args.pdf_url_base.rstrip("/")
+            pdf_url = f"{base_url}/{pdf_remote_filename}"
+            pdf_text_url = f"{base_url}/{pdf_text_remote_filename}"
 
         if args.print_json:
             print(json.dumps(summary, indent=2))
@@ -812,13 +823,23 @@ def run_ingest(args: argparse.Namespace) -> int:
             summary,
             base_dir,
             pdf_url=pdf_url,
+            pdf_text_url=pdf_text_url,
             figure_summaries=figure_summaries,
             wiki_path_prefix=wiki_path_prefix,
             doc_id=doc_id,
             kind=DEFAULT_DOC_KIND,
         )
+        text_output_path = output_path.with_name(output_path.stem + ".txt")
+        text_output_path.write_text(
+            raw_text.strip() + "\n",
+            encoding="utf-8",
+        )
         if doc_id_scope:
             register_doc_id(doc_id, doc_id_scope, output_path)
+        if args.pdf_upload and pdf_remote_filename:
+            upload_pdf(args.pdf, args.pdf_upload, pdf_remote_filename, logger)
+            if pdf_text_remote_filename and text_output_path.exists():
+                upload_pdf(text_output_path, args.pdf_upload, pdf_text_remote_filename, logger)
         logger.log(f"Wrote {output_path}")
         logger.log(f"Completed ingest for {args.pdf}")
         return 0

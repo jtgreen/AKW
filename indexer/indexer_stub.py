@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 import re
 import yaml
-from dataclasses import dataclass, asdict
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import List, Tuple, Optional
 from openai import OpenAI
 
 from dotenv import load_dotenv
@@ -33,13 +33,16 @@ FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 @dataclass
 class WikiDocument:
     """Logical document ready to be sent to OpenAI vector store."""
-    path: str          # wiki path, e.g. "shock/hemorrhage/cardiac/..."
-    url: str           # https://bsos.wiki/<path>
+    path: str          # wiki path or derived key (e.g. "...::pdf")
+    url: str           # primary citation URL (wiki page or pdf)
     title: str
     tags: List[str]
     year: str | None
     source_type: str | None
     content: str       # text to index (title + body)
+    wiki_url: Optional[str] = None
+    pdf_url: Optional[str] = None
+    pdf_text_url: Optional[str] = None
 
 
 # ------------------- Helpers -------------------
@@ -54,16 +57,21 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         raise RuntimeError("Vector store ID not set in config.yaml")
 
     metadata = {
-        "kind": "wiki",
+        "kind": doc.source_type or "wiki",
         "wiki_path": doc.path,
-        "wiki_url": doc.url,
+        "wiki_url": doc.wiki_url or doc.url,
+        "primary_url": doc.url,
+        "pdf_url": doc.pdf_url,
+        "pdf_text_url": doc.pdf_text_url,
         "title": doc.title,
         "tags": doc.tags,
         "year": doc.year,
         "source_type": doc.source_type,
     }
 
-    file_name = f"{doc.path.replace('/', '_')}.md"
+    safe_path = re.sub(r"[^A-Za-z0-9._-]+", "_", doc.path)
+    extension = ".txt" if (doc.source_type == "pdf_text") else ".md"
+    file_name = f"{safe_path}{extension}"
     file_bytes = doc.content.encode("utf-8")
 
     # Preferred path: new vector store upload helper
@@ -167,34 +175,67 @@ def normalize_tags(raw) -> List[str]:
     return []
 
 
-def build_document(md_path: Path) -> WikiDocument | None:
+def build_documents(md_path: Path) -> List[WikiDocument]:
     text = md_path.read_text(encoding="utf-8")
     fm, body = parse_front_matter(text)
 
     # You may choose to ignore unpublished pages
     if fm.get("published") is False:
-        return None
+        return []
 
     wiki_path = wiki_path_from_file(md_path, fm)
     title = fm.get("title") or md_path.stem
     tags = normalize_tags(fm.get("tags"))
     year = str(fm["year"]) if "year" in fm else None
     source_type = fm.get("source_type")
+    wiki_url = f"https://bsos.wiki/{wiki_path}"
+    pdf_url = fm.get("pdf_url")
+    pdf_text_url = fm.get("pdf_text_url")
 
-    # Content: title as H1 + body
-    content = f"# {title}\n\n{body.strip()}\n"
+    source_meta_lines = ["Sources:"]
+    source_meta_lines.append(f"- Wiki: {wiki_url}")
+    if pdf_url:
+        source_meta_lines.append(f"- PDF: {pdf_url}")
+    if pdf_text_url:
+        source_meta_lines.append(f"- PDF Text: {pdf_text_url}")
+    source_meta = "\n".join(source_meta_lines)
 
-    url = f"https://bsos.wiki/{wiki_path}"
-
-    return WikiDocument(
-        path=wiki_path,
-        url=url,
-        title=title,
-        tags=tags,
-        year=year,
-        source_type=source_type,
-        content=content,
+    docs: List[WikiDocument] = []
+    md_content = f"# {title}\n\n{source_meta}\n\n{body.strip()}\n"
+    docs.append(
+        WikiDocument(
+            path=wiki_path,
+            url=wiki_url,
+            title=title,
+            tags=tags,
+            year=year,
+            source_type=source_type or "wiki",
+            content=md_content,
+            wiki_url=wiki_url,
+            pdf_url=pdf_url,
+            pdf_text_url=pdf_text_url,
+        )
     )
+
+    text_path = md_path.with_name(md_path.stem + ".txt")
+    if text_path.exists():
+        pdf_text = text_path.read_text(encoding="utf-8", errors="ignore").strip()
+        if pdf_text:
+            pdf_doc = WikiDocument(
+                path=f"{wiki_path}::pdf",
+                url=pdf_url or wiki_url,
+                title=f"{title} (Full PDF Text)",
+                tags=tags,
+                year=year,
+                source_type="pdf_text",
+                content=f"# {title} — Full PDF Text\n\n{source_meta}\n\n{pdf_text}\n",
+                wiki_url=wiki_url,
+                pdf_url=pdf_url,
+                pdf_text_url=pdf_text_url,
+            )
+            docs.append(pdf_doc)
+
+    return docs
 
 
 def walk_markdown_files():
@@ -219,20 +260,18 @@ def main():
     total = 0
     uploaded = 0
     for md_path in walk_markdown_files():
-        doc = build_document(md_path)
-        if doc is None:
-            continue
+        docs = build_documents(md_path)
+        for doc in docs:
+            doc_hash = compute_document_hash(doc)
+            if state.get(doc.path) == doc_hash:
+                print(f"Skipping unchanged: {doc.title}")
+                total += 1
+                continue
 
-        doc_hash = compute_document_hash(doc)
-        if state.get(doc.path) == doc_hash:
-            print(f"Skipping unchanged: {doc.title}")
+            upsert_document_to_vector_store(doc)
+            state[doc.path] = doc_hash
+            uploaded += 1
             total += 1
-            continue
-
-        upsert_document_to_vector_store(doc)
-        state[doc.path] = doc_hash
-        uploaded += 1
-        total += 1
 
     if uploaded:
         save_index_state(state)

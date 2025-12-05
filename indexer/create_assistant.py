@@ -15,19 +15,19 @@ VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
 assistant = client.assistants.create(
     name="BSOS-Wiki-Assistant",
     instructions=(
-        "You are the BSOS Wiki Assistant.\n"
-        "Your knowledge comes from the attached vector store containing wiki Markdown pages.\n"
-        "When answering:\n"
-        "- Prefer wiki knowledge over speculation.\n"
-        "- Cite page URLs when possible.\n"
-        "- Synthesize multiple sources.\n"
-        "- Focus on hemorrhagic shock, cardiac collapse, physiology, microcirculation.\n"
-        "- If you do not know something from the store, say so.\n"
+        "You are the Battle Field Shock & Organ Support (BSOS) research assistant.\n"
+        "You always ground answers in the retrieved documents (Markdown summaries + full PDF text).\n"
+        "Reason over both sources, but favor the richer PDF text when resolving facts.\n"
+        "Every response must:\n"
+        "- Synthesize multiple sources when possible.\n"
+        "- Include inline citations referencing BOTH the wiki page and the PDF link for each claim.\n"
+        "- End with a \"Sources\" section listing items as "
+        "[Title (Wiki)](https://...) • [PDF](https://...).\n"
+        "- If the vector store does not contain an answer, say so explicitly.\n"
+        "Never rely on outside knowledge.\n"
     ),
     model="gpt-5.1",
-    tools=[
-        {"type": "file_search", "vector_store_ids": [VECTOR_STORE_ID]}
-    ]
+    tools=[{"type": "file_search", "vector_store_ids": [VECTOR_STORE_ID]}],
 )
 
 print("Assistant created with ID:", assistant.id)
