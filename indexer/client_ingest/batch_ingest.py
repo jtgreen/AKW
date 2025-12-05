@@ -189,6 +189,7 @@ def main(argv: List[str]) -> int:
         print(f"Ingest script not found: {ingest_script}", file=sys.stderr)
         return 1
 
+    passthrough_args = [token for token in passthrough_args if token != "--"]
     passthrough_args = apply_default_ingest_args(
         list(passthrough_args),
         args.pdf_upload_target,
