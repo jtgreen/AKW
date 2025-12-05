@@ -55,11 +55,11 @@ services:
     networks:
       - wiki_net
     volumes:
-      - ../data:/wiki/data   # <-- this is the bind mount
+      - /opt/bsos-wiki-data:/wiki/data   # <-- this is the bind mount
 
   bsos-ask:
     build:
-      context: ../indexer
+      context: /opt/knowledge-wiki-remote/indexer
     container_name: bsos-ask
     environment:
       # pass your key into the container
