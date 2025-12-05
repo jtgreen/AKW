@@ -10,13 +10,19 @@ bsos.wiki {
 
     # Ask UI (optional static HTML)
     handle_path /ask/* {
-        root * /opt/knowledge-wiki/indexer/ask
+        root * /opt/knowledge-wiki-remote/indexer/ask
         file_server
     }
 
     # Serve static PDFs (and other files) from /opt/.../uploads
     handle_path /uploads/* {
-        root * /opt/knowledge-wiki/data/uploads
+        root * /opt/bsos-wiki-data/uploads
+        file_server
+    }
+
+    # Serve ingest-managed PDFs outside Wiki.js' uploads directory
+    handle_path /pdfs/* {
+        root * /opt/bsos-wiki/pdfs
         file_server
     }
 

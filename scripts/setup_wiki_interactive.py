@@ -24,6 +24,7 @@ This script will:
 
   - Install Docker, Docker Compose v2, Caddy, UFW
   - Create /opt/<wiki-name>-{stack,data,indexer}
+  - Create /opt/<wiki-name>-pdfs (served via https://<domain>/pdfs/*)
   - Copy stack/ → /opt/<wiki-name>-stack/
   - Copy indexer/ → /opt/<wiki-name>-indexer/
   - Create /opt/<wiki-name>-data/{uploads,ask}
@@ -96,6 +97,7 @@ def main():
     stack_dir = repo_root / "stack"
     indexer_dir = repo_root / "indexer"
     data_dir = repo_root / "data"
+    pdf_dir = Path(f"/opt/{wiki_name}-pdfs")
 
     print("\nSummary:")
     print(f"  repo_url    = {repo_url}")
@@ -104,6 +106,7 @@ def main():
     print(f"  stack_dir   = {stack_dir}")
     print(f"  indexer_dir = {indexer_dir}")
     print(f"  data_dir    = {data_dir}")
+    print(f"  pdf_dir     = {pdf_dir}")
     print(f"  stack_dir   = {stack_dir}")
     print(f"  indexer_dir = {indexer_dir}")
     print(f"  data_dir    = {data_dir}")
@@ -198,13 +201,19 @@ def main():
     # data subdirs
     (data_dir / "uploads").mkdir(parents=True, exist_ok=True)
     (data_dir / "ask").mkdir(parents=True, exist_ok=True)
+    pdf_dir.mkdir(parents=True, exist_ok=True)
     # relax: we'll let containers run as uid 1000, but root can still write
     try:
         run(["chown", "-R", "1000:1000", str(data_dir)], check=False)
     except Exception:
         pass
+    try:
+        run(["chown", "-R", "1000:1000", str(pdf_dir)], check=False)
+    except Exception:
+        pass
     os.chmod(data_dir / "uploads", 0o755)
     os.chmod(data_dir / "ask", 0o755)
+    os.chmod(pdf_dir, 0o755)
 
     print("Setting up optional virtual environment for manual indexer runs...")
     venv_path = indexer_dir / ".venv"
@@ -230,6 +239,7 @@ def main():
             "john.travis.green@gmail.com": email,
             "/opt/knowledge-wiki/indexer/ask": f"{indexer_dir_str}/ask",
             "/opt/knowledge-wiki/data/uploads": f"{data_dir_str}/uploads",
+            "/opt/knowledge-wiki/pdfs": str(pdf_dir),
         },
     )
     replace_tokens(
@@ -272,6 +282,11 @@ def main():
         file_server
     }}
 
+    handle_path /pdfs/* {{
+        root * {pdf_dir}
+        file_server
+    }}
+
     reverse_proxy localhost:3000
 }}
 """
@@ -302,7 +317,7 @@ def main():
     print(f"  1) Visit: https://{domain}  → complete Wiki.js setup (admin user, etc.).")
     print("  2) In Wiki.js, configure Git Storage to point at your wiki content repo.")
     print(f"  3) Place your Ask UI HTML in {data_dir}/ask/index.html (optional).")
-    print(f"  4) Upload PDFs into {data_dir}/uploads and run your indexer to build the vector store.")
+    print(f"  4) Upload ingest-managed PDFs into {pdf_dir} (served at https://{domain}/pdfs/...) and run your indexer to build the vector store.")
     print("")
     print(f"To inspect the stack:")
     print(f"  cd {stack_dir}")

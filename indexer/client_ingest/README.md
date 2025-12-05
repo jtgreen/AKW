@@ -13,7 +13,7 @@ This directory mirrors the original `knowledge-wiki` tooling. Run it on your lap
 
 Optional helpers:
 - `ocrmypdf` (automatic fallback when a PDF has no embedded text)  
-- `scp` + SSH keys for hands-free uploads to `/opt/bsos-wiki-data/uploads`
+- `scp` + SSH keys for hands-free uploads to `/opt/bsos-wiki-pdfs`
 
 ---
 
@@ -36,7 +36,7 @@ Notable flags (all forward-compatible with the server indexer):
 | `--doc-id` | Optional override for the `doc_id` stored in front matter. By default, the script derives one from the slug + year so the server-side indexer sees a stable identity. |
 | `--model` / `--max-chars` | Control which OpenAI model to call and how much text to send (default ≈900k chars). |
 | `--print-json` / `--dry-run` | Inspect the structured JSON or skip writing Markdown altogether. |
-| `--pdf-upload` / `--pdf-url-base` | `scp` the source PDF to the droplet (e.g., `root@167.71.174.28:/opt/bsos-wiki-data/uploads`) and embed a download link such as `https://bsos.wiki/uploads/...`. |
+| `--pdf-upload` / `--pdf-url-base` | `scp` the source PDF to the dedicated ingest directory (e.g., `root@bsos.wiki:/opt/bsos-wiki-pdfs`) and embed a download link such as `https://bsos.wiki/pdfs/...`. |
 | `--pdf-text-dir` | Local directory where the extracted PDF plaintext files are stored before upload (defaults to `uploaded_pdf_text/` next to the script). |
 | `--pdf-raw-renamed-dir` | Local directory where the PDF is copied/renamed to the canonical filename before SCP (defaults to `uploaded_pdf_raw_renamed/`). |
 | `--ignore-dir` | Repeatable; skip these directory names when checking for duplicate `doc_id`s (e.g., `.git`). |
@@ -58,18 +58,20 @@ If the LLM ever returns placeholder text, the script raises `llm_placeholder` an
 Process entire folders:
 
 ```bash
-python batch_ingest.py "/path/to/papers" -- \
+python batch_ingest.py "/path/to/papers" \
+  --pdf-upload-target root@bsos.wiki:/opt/bsos-wiki-pdfs \
+  --pdf-url-base https://bsos.wiki/pdfs \
+  -- \
   --base-dir /Users/you/Dev/bsos-wiki/research/cardiovascular \
-  --wiki-path-prefix "shock/hemorrhage/cardiac" \
-  --pdf-upload root@167.71.174.28:/opt/bsos-wiki-data/uploads \
-  --pdf-url-base https://bsos.wiki/uploads
+  --wiki-path-prefix "shock/hemorrhage/cardiac"
 ```
 
 Behavior:
 
 - Recurses through the directory, passing every `.pdf` to `ingest_paper.py`.  
 - Remembers successes via `batch_ingested.log` so reruns skip already-processed files.  
-- Logs failures (with reason + payload) to `failed_pdfs.txt`, then keeps going.  
+- Logs failures (with reason + payload) to `failed_pdfs.log`, then keeps going.  
+- `--pdf-upload-target` / `--pdf-url-base` make it easy to default uploads to `/opt/<wiki>-pdfs` and links to `https://<domain>/pdfs/...` without repeating the flags in every run.  
 - Any options placed after `--` are forwarded verbatim to `ingest_paper.py` (so you can tweak `--doc-id`, `--wiki-root`, etc.).
 
 ---

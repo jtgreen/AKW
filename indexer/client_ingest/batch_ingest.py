@@ -3,10 +3,10 @@
 Batch driver for ingest_paper.py with failure tracking.
 
 Given a directory of PDFs, this script:
-- Tracks which files have already been processed in batch_ingested.txt.
+- Tracks which files have already been processed in batch_ingested.log.
 - Walks the directory recursively to find PDF files.
 - Invokes ingest_paper.py for every new file, passing through any additional CLI args.
-- Records failures (e.g., too long PDF, empty text, placeholder summary) in failed_pdfs.txt.
+- Records failures (e.g., too long PDF, empty text, placeholder summary) in failed_pdfs.log.
 - Streams ingest output to stdout/stderr but continues past failures automatically.
 """
 
@@ -50,6 +50,16 @@ def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=Path,
         default=FAILURE_LOG_PATH,
         help="File to append details for PDFs that failed ingestion.",
+    )
+    parser.add_argument(
+        "--pdf-upload-target",
+        type=str,
+        help="Automatically pass --pdf-upload TARGET to ingest_paper.py unless already provided.",
+    )
+    parser.add_argument(
+        "--pdf-url-base",
+        type=str,
+        help="Automatically pass --pdf-url-base URL to ingest_paper.py unless already provided.",
     )
     return parser.parse_known_args(argv)
 
@@ -114,6 +124,36 @@ def append_failure_log(
         handle.write("\n")
 
 
+def _flag_present(args_list: List[str], flag: str) -> bool:
+    flag_eq = f"{flag}="
+    for token in args_list:
+        if token == flag or token.startswith(flag_eq):
+            return True
+    return False
+
+
+def _inject_flag(args_list: List[str], flag: str, value: Optional[str]) -> Tuple[List[str], bool]:
+    if not value or _flag_present(args_list, flag):
+        return args_list, False
+    updated = list(args_list)
+    updated.extend([flag, value])
+    return updated, True
+
+
+def apply_default_ingest_args(
+    passthrough_args: List[str],
+    pdf_upload_target: Optional[str],
+    pdf_url_base: Optional[str],
+) -> List[str]:
+    updated, added_upload = _inject_flag(passthrough_args, "--pdf-upload", pdf_upload_target)
+    if added_upload:
+        print(f"Defaulting --pdf-upload to {pdf_upload_target}")
+    updated, added_url = _inject_flag(updated, "--pdf-url-base", pdf_url_base)
+    if added_url:
+        print(f"Defaulting --pdf-url-base to {pdf_url_base}")
+    return updated
+
+
 def run_ingest(
     ingest_script: Path,
     pdf_path: Path,
@@ -148,6 +188,12 @@ def main(argv: List[str]) -> int:
     if not ingest_script.exists():
         print(f"Ingest script not found: {ingest_script}", file=sys.stderr)
         return 1
+
+    passthrough_args = apply_default_ingest_args(
+        list(passthrough_args),
+        args.pdf_upload_target,
+        args.pdf_url_base,
+    )
 
     processed = load_history(state_path)
     all_pdfs = discover_pdfs(pdf_root)
