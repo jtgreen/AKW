@@ -168,7 +168,7 @@
     const modelSelect = document.getElementById("model");
 
     async function askWiki(query, model) {
-      const response = await fetch("./api/ask", {
+      const response = await fetch("/ask/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, model }),
