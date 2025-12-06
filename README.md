@@ -38,4 +38,4 @@ sudo apt install ghostscript tesseract-ocr
 # Notes
 Add to clean
 Add the caddyfile and ask changes as the base landing page, refreeze
-
+Add manual css changes to clean
