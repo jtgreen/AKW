@@ -33,3 +33,9 @@ sudo apt install ghostscript tesseract-ocr
 ```
 
 `ocrmypdf` requires `gs` (Ghostscript) on your PATH; without it, ingest runs will fail when falling back to OCR.
+
+
+# Notes
+Add to clean
+Add the caddyfile and ask changes as the base landing page, refreeze
+
