@@ -183,11 +183,7 @@
 
       try {
         const data = await askWiki(query);
-        const rawAnswer = data.answer?.trim() || "";
-        const linkified = rawAnswer
-          .replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
-          .replace(/\n/g, "<br>");
-        answerText.innerHTML = linkified || "No answer returned.";
+        answerText.textContent = data.answer?.trim() || "No answer returned.";
 
         sourcesEl.innerHTML = "";
         if (Array.isArray(data.sources) && data.sources.length) {
