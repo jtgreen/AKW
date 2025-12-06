@@ -48,15 +48,18 @@
       gap: 0.75rem;
     }
 
-    textarea {
+    textarea, select {
       width: 100%;
-      min-height: 120px;
       background: rgba(13, 17, 23, 0.7);
       color: inherit;
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 12px;
       padding: 1rem;
       font-size: 1rem;
+    }
+
+    textarea {
+      min-height: 120px;
       resize: vertical;
     }
 
@@ -136,6 +139,13 @@
         placeholder="e.g. Summarize the cardiac mechanism of irreversible hemorrhagic shock."
         required
       ></textarea>
+      <label for="model" style="font-weight:600;">Model</label>
+      <select id="model" name="model">
+        <option value="gpt-5.1">GPT-5.1 (default)</option>
+        <option value="gpt-5.1-mini">GPT-5.1 Mini</option>
+        <option value="gpt-4.1">GPT-4.1</option>
+        <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+      </select>
       <button type="submit">Ask</button>
       <div class="status" id="status"></div>
     </form>
@@ -155,12 +165,13 @@
     const answerText = document.getElementById("answer-text");
     const sourcesEl = document.getElementById("sources");
     const button = form.querySelector("button");
+    const modelSelect = document.getElementById("model");
 
-    async function askWiki(query) {
+    async function askWiki(query, model) {
       const response = await fetch("./api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, model }),
       });
       if (!response.ok) {
         const detail = await response.text();
@@ -182,7 +193,8 @@
       answerCard.style.display = "none";
 
       try {
-        const data = await askWiki(query);
+        const model = modelSelect.value;
+        const data = await askWiki(query, model);
         answerText.textContent = data.answer?.trim() || "No answer returned.";
 
         sourcesEl.innerHTML = "";

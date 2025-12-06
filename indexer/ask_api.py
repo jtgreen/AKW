@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import yaml
 from typing import List
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -18,6 +18,14 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 ROOT = Path(__file__).resolve().parent
 CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
 VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
+
+AVAILABLE_MODELS = {
+    "gpt-5.1": "GPT-5.1",
+    "gpt-5.1-mini": "GPT-5.1 Mini",
+    "gpt-4.1": "GPT-4.1",
+    "gpt-4.1-mini": "GPT-4.1 Mini",
+}
+DEFAULT_MODEL = "gpt-5.1"
 
 SYSTEM_PROMPT = """You are the Battle Field Shock and Organ Support (BSOS) Wiki assistant.
 
@@ -39,6 +47,7 @@ app = FastAPI()
 
 class AskRequest(BaseModel):
     query: str
+    model: str | None = None
 
 class Source(BaseModel):
     # You can extend this later (title, url, etc.)
@@ -49,11 +58,24 @@ class AskResponse(BaseModel):
     sources: List[Source] = []
 
 
+def resolve_model(requested: str | None) -> str:
+    if not requested:
+        return DEFAULT_MODEL
+    requested = requested.strip()
+    if requested not in AVAILABLE_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported model '{requested}'. Available: {', '.join(AVAILABLE_MODELS.keys())}",
+        )
+    return requested
+
+
 @app.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
+    model_name = resolve_model(req.model)
     # Call Responses API with file_search
     resp = client.responses.create(
-        model="gpt-5.1",
+        model=model_name,
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": req.query},
