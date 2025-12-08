@@ -92,6 +92,13 @@ def ensure_doc_id(front_matter: dict, new_rel: str) -> None:
     front_matter["doc_id"] = Path(new_rel).stem
 
 
+def update_path_metadata(front_matter: dict, new_rel: str) -> None:
+    rel_without_ext = Path(new_rel).with_suffix("").as_posix()
+    front_matter["path"] = rel_without_ext
+    # Keep existing slug if present; otherwise set to filename stem
+    front_matter.setdefault("slug", Path(new_rel).stem)
+
+
 def normalize_tags(tags) -> str:
     if not tags:
         return ""
@@ -134,6 +141,7 @@ def apply_plan(
         front_matter, body = parse_front_matter(text)
 
         ensure_doc_id(front_matter, new_rel)
+        update_path_metadata(front_matter, new_rel)
         if new_tags:
             front_matter["tags"] = normalize_tags(new_tags)
         if add_hub_ids and hub_ids:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import hashlib
 import os
@@ -55,6 +56,46 @@ class WikiDocument:
 
 
 # ------------------- Helpers -------------------
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Upload Markdown summaries and PDF text into the configured OpenAI vector store."
+    )
+    parser.add_argument(
+        "--force-clear",
+        action="store_true",
+        help="Skip the confirmation prompt when clearing an existing vector store before re-indexing.",
+    )
+    return parser.parse_args()
+
+
+def list_vector_store_file_ids() -> list[str]:
+    file_ids: list[str] = []
+    cursor = None
+    while True:
+        resp = client.vector_stores.files.list(
+            vector_store_id=VECTOR_STORE_ID,
+            limit=100,
+            after=cursor,
+        )
+        if not resp.data:
+            break
+        for f in resp.data:
+            file_ids.append(f.id)
+        if getattr(resp, "has_more", False):
+            cursor = resp.data[-1].id
+        else:
+            break
+    return file_ids
+
+
+def clear_vector_store(file_ids: list[str]) -> None:
+    if not file_ids:
+        return
+    print(f"Deleting {len(file_ids)} file(s) from vector store {VECTOR_STORE_ID}...")
+    for file_id in file_ids:
+        client.vector_stores.files.delete(vector_store_id=VECTOR_STORE_ID, file_id=file_id)
+    print("Vector store cleared.")
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
@@ -275,13 +316,30 @@ def walk_markdown_files():
 # ------------------- Main (for now: just inspect) -------------------
 
 def main():
+    args = parse_args()
     print(f"Using wiki repo at: {REPO_ROOT}")
     print(f"Vector store: {VECTOR_STORE_ID}\n")
 
     if not REPO_ROOT.exists():
         raise SystemExit("Repo root does not exist!")
-
-    state = load_index_state()
+    existing_file_ids = list_vector_store_file_ids()
+    if existing_file_ids:
+        proceed = args.force_clear
+        if not proceed:
+            answer = input(
+                f"Vector store {VECTOR_STORE_ID} already contains {len(existing_file_ids)} files. "
+                "Delete them and re-index? [y/N]: "
+            ).strip().lower()
+            proceed = answer == "y"
+        if not proceed:
+            print("Aborting without changes.")
+            return
+        clear_vector_store(existing_file_ids)
+        if STATE_PATH.exists():
+            STATE_PATH.unlink()
+        state = {}
+    else:
+        state = load_index_state()
     total = 0
     uploaded = 0
     for md_path in walk_markdown_files():

@@ -9,3 +9,8 @@ This directory is self-contained:
 - Laptop-only ingestion scripts in `client_ingest/`
 
 Run everything from here so relative paths resolve and state files (`.indexer_state.json`, `file_index.yaml`) stay beside the scripts.
+
+
+---
+
+FIX FRONT MATTER PATHS IS A ONE TIME HELPER SCRIPT
