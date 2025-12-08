@@ -100,7 +100,6 @@
     }
 
     #answer-text {
-      white-space: pre-wrap;
       line-height: 1.5;
     }
 
@@ -201,7 +200,24 @@
         const model = modelSelect.value;
         const data = await askWiki(query, model);
         const rawAnswer = data.answer?.trim() || "";
-        answerText.textContent = rawAnswer || "No answer returned.";
+        const escaped = rawAnswer
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        const withMarkdownLinks = escaped.replace(
+          /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+          '<a href="$2" target="_blank" rel="noopener">$1</a>'
+        );
+        const linkified = withMarkdownLinks
+          .replace(/(https?:\/\/[^\s<)]+)/g, (match, _p1, offset, text) => {
+            const preceding = text.slice(Math.max(0, offset - 7), offset);
+            if (preceding.includes('href="') || preceding.includes("href='")) {
+              return match;
+            }
+            return `<a href="${match}" target="_blank" rel="noopener">${match}</a>`;
+          })
+          .replace(/\n/g, "<br>");
+        answerText.innerHTML = linkified || "No answer returned.";
 
         sourcesEl.innerHTML = "";
         if (Array.isArray(data.sources) && data.sources.length) {
