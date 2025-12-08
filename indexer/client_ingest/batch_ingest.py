@@ -61,6 +61,11 @@ def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
         help="Automatically pass --pdf-url-base URL to ingest_paper.py unless already provided.",
     )
+    parser.add_argument(
+        "--rebuild-log",
+        action="store_true",
+        help="Do not run ingestion; simply scan the directory and mark every PDF as ingested in the state file.",
+    )
     return parser.parse_known_args(argv)
 
 
@@ -189,15 +194,22 @@ def main(argv: List[str]) -> int:
         print(f"Ingest script not found: {ingest_script}", file=sys.stderr)
         return 1
 
+    processed = load_history(state_path)
+    all_pdfs = discover_pdfs(pdf_root)
+    if args.rebuild_log:
+        print(f"Rebuilding state file at {state_path} with {len(all_pdfs)} PDFs...")
+        state_path.write_text("", encoding="utf-8")
+        for pdf_path in all_pdfs:
+            append_history(state_path, str(pdf_path.resolve()))
+        print("Rebuild complete. No ingestion was performed.")
+        return 0
+
     passthrough_args = [token for token in passthrough_args if token != "--"]
     passthrough_args = apply_default_ingest_args(
         list(passthrough_args),
         args.pdf_upload_target,
         args.pdf_url_base,
     )
-
-    processed = load_history(state_path)
-    all_pdfs = discover_pdfs(pdf_root)
     pending = [path for path in all_pdfs if str(path.resolve()) not in processed]
 
     if not pending:

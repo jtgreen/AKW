@@ -72,6 +72,7 @@ Behavior:
 - Remembers successes via `batch_ingested.log` so reruns skip already-processed files.  
 - Logs failures (with reason + payload) to `failed_pdfs.log`, then keeps going.  
 - `--pdf-upload-target` / `--pdf-url-base` make it easy to default uploads to `/opt/<wiki>-pdfs` and links to `https://<domain>/pdfs/...` without repeating the flags in every run.  
+- `--rebuild-log` scans the directory and recreates `batch_ingested.log` without running ingest (handy if the PDFs are already uploaded but the log was lost).  
 - Any options placed after `--` are forwarded verbatim to `ingest_paper.py` (so you can tweak `--doc-id`, `--wiki-root`, etc.).
 
 ---
