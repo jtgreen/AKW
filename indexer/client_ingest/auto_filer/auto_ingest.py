@@ -36,6 +36,7 @@ DEFAULT_STATE_FILE = CLIENT_INGEST_DIR / "batch_ingested.log"
 DEFAULT_LOG_FILE = CLIENT_INGEST_DIR / "incremental_ingest.log"
 DEFAULT_PDF_TEXT_DIR = CLIENT_INGEST_DIR / "uploaded_pdf_text"
 DEFAULT_PDF_RAW_DIR = CLIENT_INGEST_DIR / "uploaded_pdf_raw_renamed"
+DEDUP_THRESHOLD = 0.9
 
 # Regex
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
