@@ -77,7 +77,46 @@ Behavior:
 
 ---
 
-## 4. What the pipeline produces
+## 4. Auto-Filer (incremental ingest)
+
+`client_ingest/auto_filer/auto_ingest.py` handles “bee-line” ingests: it classifies each new PDF against the current wiki structure, writes the Markdown directly into the chosen hub, uploads the PDF/TXT, and upserts just that article into the vector store so Ask can cite it immediately—no full re-index required.
+
+```bash
+python client_ingest/auto_filer/auto_ingest.py \
+  --watch-dir "/path/to/incoming/PDFs" \
+  --wiki-root /Users/you/Dev/bsos-wiki \
+  --pdf-upload root@bsos.wiki:/opt/bsos-wiki-pdfs \
+  --pdf-url-base https://bsos.wiki/pdfs \
+  --git-commit
+```
+
+Workflow:
+
+1. Scans the watch directory for PDFs missing from `batch_ingested.log` (comments are ignored).  
+2. Runs a dry-run ingest to get the LLM summary, then asks GPT‑5.1 (with file_search over the live vector store) to pick the best existing directory and up to 5 existing tags.  
+3. Re-runs ingest_paper into that directory, rewrites front matter to match the chosen `path/slug/tags`, uploads the PDF/TXT, and immediately upserts the Markdown + PDF text into the configured vector store.  
+4. Appends a timestamped comment + path entry to `batch_ingested.log` so future batch jobs still skip the file.  
+5. Optional `--git-commit` pulls the repo, commits the new Markdown, and pushes it upstream.
+
+Flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--watch-dir` | Directory of PDFs to monitor recursively. |
+| `--wiki-root` | Local bsos-wiki repo (used to read directories/tags and commit changes). |
+| `--state-file` | Which log to use for “already ingested” tracking (default `batch_ingested.log`). |
+| `--pdf-upload`, `--pdf-url-base` | Passed to ingest_paper so uploads/links match your deployment. |
+| `--pdf-text-dir`, `--pdf-raw-dir` | Local folders where ingest_paper stores extracted text / renamed PDFs. |
+| `--model` / `--max-tags` | Control the classifier LLM and how many tags it can keep. |
+| `--wiki-base-url` | Used when writing vector-store metadata (default `https://bsos.wiki`). |
+| `--dry-run` | Shows classification suggestions without writing files or touching the vector store. |
+| `--git-commit` | Pull/add/commit/push inside `--wiki-root` after successful ingests. |
+
+Automate it with `client_ingest/auto_filer/run_auto_ingest.sh` (set `WATCH_DIR`, `WIKI_ROOT`, etc.) and drop it into cron/systemd.
+
+---
+
+## 5. What the pipeline produces
 
 - OCR (via `pypdf` or `ocrmypdf`) to pull text out of crusty scans.  
 - Structured JSON from OpenAI (title, tags, key points, etc.) → Markdown with Wiki.js-ready front matter.  
@@ -88,7 +127,7 @@ Behavior:
 
 ---
 
-## 5. Generated files
+## 6. Generated files
 
 The `.gitignore` in this folder already excludes:
 

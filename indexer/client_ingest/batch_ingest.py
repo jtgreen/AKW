@@ -76,7 +76,7 @@ def load_history(path: Path) -> Set[str]:
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
             cleaned = line.strip()
-            if cleaned:
+            if cleaned and not cleaned.startswith("#"):
                 entries.add(cleaned)
     return entries
 
