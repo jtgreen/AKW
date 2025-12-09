@@ -346,6 +346,54 @@ Key points:
     return directory, chosen_tags
 
 
+def find_similar_documents(
+    summary_text: str,
+    model: str,
+    max_results: int = 3,
+) -> List[Tuple[str, float]]:
+    if not summary_text.strip():
+        return []
+    resp = client.responses.create(
+        model=model,
+        input=[
+            {
+                "role": "system",
+                "content": (
+                    "You check for duplicates in the BSOS wiki. "
+                    "Use the file_search tool and then reply with STRICT JSON as "
+                    '{"matches": [{"path": \"...\", \"score\": 0.0-1.0}]} using the wiki_path metadata.'
+                ),
+            },
+            {
+                "role": "user",
+                "content": "Check whether this paper already exists:\n" + summary_text,
+            },
+        ],
+        tools=[
+            {
+                "type": "file_search",
+                "vector_store_ids": [VECTOR_STORE_ID],
+            }
+        ],
+        response_format={"type": "json_object"},
+    )
+    try:
+        raw = resp.output[0].content[0].text
+        data = json.loads(raw)
+    except Exception:
+        return []
+
+    raw_matches = data.get("matches") or data.get("similar_docs") or []
+    matches: List[Tuple[str, float]] = []
+    for item in raw_matches:
+        path = item.get("path") or item.get("wiki_path") or item.get("id")
+        score = item.get("score")
+        if path and score is not None:
+            matches.append((path, float(score)))
+    matches.sort(key=lambda x: x[1], reverse=True)
+    return matches[:max_results]
+
+
 def normalize_directory(value: str) -> str:
     return value.strip().strip("/").replace("\\", "/")
 
@@ -577,16 +625,18 @@ def process_pdf(
     state_file: Path,
     logger: Logger,
 ) -> None:
+    logger.log(f"Starting preview ingest for {pdf_path}")
     summary, summary_text = run_ingest_preview(pdf_path, args.ingest_script, args.wiki_root, logger)
     if args.deduplicate:
+        logger.log("Running duplicate check via vector store...")
         matches = find_similar_documents(summary_text, args.model)
         if matches and matches[0][1] >= DEDUP_THRESHOLD:
             logger.log(f"Duplicate detected for {pdf_path}; similarity {matches[0][1]:.3f}. Skipping.")
             logger.log_duplicate(pdf_path, matches)
             return
+    logger.log("Classifying directory + tags...")
     directory, chosen_tags = classify_document(summary, directories, tags, args.model, args.max_tags, logger)
-    logger.log(f"Chosen directory: {directory}")
-    logger.log(f"Chosen tags: {chosen_tags}")
+    logger.log(f"Classification result: directory='{directory}', tags={chosen_tags}")
 
     if args.dry_run:
         logger.log("Dry run enabled; skipping ingest/move/upload.")
@@ -603,7 +653,9 @@ def process_pdf(
         args.pdf_raw_dir,
         logger,
     )
+    logger.log("Updating front matter metadata...")
     front_matter = update_front_matter(md_path, directory, chosen_tags)
+    logger.log("Uploading Markdown/PDF text to vector store...")
     upload_to_vector_store(md_path, front_matter, args.pdf_text_dir, args.wiki_base_url, args.wiki_root, logger)
     append_history_with_note(state_file, pdf_path, logger)
 
@@ -633,8 +685,11 @@ def main() -> None:
         return
 
     logger.log(f"Found {len(pending)} new PDF(s). Gathering wiki structure...")
+    if args.deduplicate:
+        logger.log("Deduplication is ENABLED (threshold 0.90).")
     directories = gather_directories(args.wiki_root)
     tags = gather_tags(args.wiki_root)
+    logger.log(f"Discovered {len(directories)} directories and {len(tags)} tags.")
     if not directories:
         raise SystemExit("No directories discovered in wiki root.")
     if not tags:
@@ -652,49 +707,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-def find_similar_documents(
-    summary_text: str,
-    model: str,
-    max_results: int = 3,
-) -> List[Tuple[str, float]]:
-    if not summary_text.strip():
-        return []
-    resp = client.responses.create(
-        model=model,
-        input=[
-            {
-                "role": "system",
-                "content": (
-                    "You check for duplicates in the BSOS wiki. "
-                    "Use the file_search tool and then reply with STRICT JSON as "
-                    '{"matches": [{"path": "...", "score": 0.0-1.0}]} using the wiki_path metadata.'
-                ),
-            },
-            {
-                "role": "user",
-                "content": "Check whether this paper already exists:\n" + summary_text,
-            },
-        ],
-        tools=[
-            {
-                "type": "file_search",
-                "vector_store_ids": [VECTOR_STORE_ID],
-            }
-        ],
-        response_format={"type": "json_object"},
-    )
-    try:
-        raw = resp.output[0].content[0].text
-        data = json.loads(raw)
-    except Exception:
-        return []
-
-    raw_matches = data.get("matches") or data.get("similar_docs") or []
-    matches: List[Tuple[str, float]] = []
-    for item in raw_matches:
-        path = item.get("path") or item.get("wiki_path") or item.get("id")
-        score = item.get("score")
-        if path and score is not None:
-            matches.append((path, float(score)))
-    matches.sort(key=lambda x: x[1], reverse=True)
-    return matches[:max_results]
