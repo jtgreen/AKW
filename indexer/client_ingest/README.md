@@ -93,7 +93,7 @@ python client_ingest/auto_filer/auto_ingest.py \
 Workflow:
 
 1. Scans the watch directory for PDFs missing from `batch_ingested.log` (comments are ignored).  
-2. Runs a dry-run ingest to get the LLM summary, then asks GPT‑5.1 (with file_search over the live vector store) to pick the best existing directory and up to 5 existing tags.  
+2. Runs a dry-run ingest to get the LLM summary, optionally checks the vector store for near-duplicates (`--deduplicate`), then asks GPT‑5.1 (with file_search over the live vector store) to pick the best existing directory and up to 5 existing tags.  
 3. Re-runs ingest_paper into that directory, rewrites front matter to match the chosen `path/slug/tags`, uploads the PDF/TXT, and immediately upserts the Markdown + PDF text into the configured vector store.  
 4. Appends a timestamped comment + path entry to `batch_ingested.log` so future batch jobs still skip the file.  
 5. Optional `--git-commit` pulls the repo, commits the new Markdown, and pushes it upstream.
@@ -109,6 +109,7 @@ Flags:
 | `--pdf-text-dir`, `--pdf-raw-dir` | Local folders where ingest_paper stores extracted text / renamed PDFs. |
 | `--model` / `--max-tags` | Control the classifier LLM and how many tags it can keep. |
 | `--wiki-base-url` | Used when writing vector-store metadata (default `https://bsos.wiki`). |
+| `--deduplicate` | Query the vector store first and skip anything ≥90% similar (logged to `duplicates.log`). |
 | `--dry-run` | Shows classification suggestions without writing files or touching the vector store. |
 | `--git-commit` | Pull/add/commit/push inside `--wiki-root` after successful ingests. |
 

@@ -264,7 +264,8 @@ def run_ingest_preview(
     summary = extract_json_block(proc.stdout)
     if not summary:
         raise RuntimeError("Unable to parse summary JSON from ingest preview output.")
-    return summary, proc.stdout or ""
+    summary_text = json.dumps(summary, indent=2)
+    return summary, summary_text
 
 
 def extract_json_block(text: str) -> Optional[dict]:
@@ -568,48 +569,6 @@ def git_sync(wiki_root: Path, logger: Logger) -> None:
         logger.log(f"Git command failed: {exc}")
 
 
-def run_duplicate_check(
-    summary_text: str,
-    logger: Logger,
-    threshold: float = 0.9,
-    max_results: int = 3,
-) -> Optional[List[Tuple[str, float]]]:
-    if not summary_text.strip():
-        return None
-    resp = client.responses.create(
-        model="gpt-4o-mini",
-        input=[
-            {"role": "system", "content": "You are checking for duplicate BSOS wiki entries via vector store search."},
-            {
-                "role": "user",
-                "content": "Find existing documents most similar to this paper:\n" + summary_text,
-            },
-        ],
-        tools=[
-            {
-                "type": "file_search",
-                "vector_store_ids": [VECTOR_STORE_ID],
-            }
-        ],
-    )
-    matches: List[Tuple[str, float]] = []
-    for tool in resp.output:
-        if getattr(tool, "type", None) == "file_search":
-            for item in getattr(tool, "results", []):
-                path = item.get("metadata", {}).get("wiki_path") or item.get("id")
-                score = item.get("score")
-                if path and score is not None:
-                    matches.append((path, float(score)))
-    if not matches:
-        return None
-    matches.sort(key=lambda x: x[1], reverse=True)
-    top = matches[:max_results]
-    if top and top[0][1] >= threshold:
-        logger.log_duplicate(Path(summary_text.splitlines()[0]), top)
-        return top
-    return None
-
-
 def process_pdf(
     pdf_path: Path,
     args: argparse.Namespace,
@@ -618,11 +577,12 @@ def process_pdf(
     state_file: Path,
     logger: Logger,
 ) -> None:
-    summary, raw_json = run_ingest_preview(pdf_path, args.ingest_script, args.wiki_root, logger)
+    summary, summary_text = run_ingest_preview(pdf_path, args.ingest_script, args.wiki_root, logger)
     if args.deduplicate:
-        matches = run_duplicate_check(raw_json, logger)
-        if matches:
-            logger.log(f"Duplicate detected for {pdf_path}; skipping ingest. See duplicates.log for details.")
+        matches = find_similar_documents(summary_text, args.model)
+        if matches and matches[0][1] >= DEDUP_THRESHOLD:
+            logger.log(f"Duplicate detected for {pdf_path}; similarity {matches[0][1]:.3f}. Skipping.")
+            logger.log_duplicate(pdf_path, matches)
             return
     directory, chosen_tags = classify_document(summary, directories, tags, args.model, args.max_tags, logger)
     logger.log(f"Chosen directory: {directory}")
@@ -692,3 +652,49 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+def find_similar_documents(
+    summary_text: str,
+    model: str,
+    max_results: int = 3,
+) -> List[Tuple[str, float]]:
+    if not summary_text.strip():
+        return []
+    resp = client.responses.create(
+        model=model,
+        input=[
+            {
+                "role": "system",
+                "content": (
+                    "You check for duplicates in the BSOS wiki. "
+                    "Use the file_search tool and then reply with STRICT JSON as "
+                    '{"matches": [{"path": "...", "score": 0.0-1.0}]} using the wiki_path metadata.'
+                ),
+            },
+            {
+                "role": "user",
+                "content": "Check whether this paper already exists:\n" + summary_text,
+            },
+        ],
+        tools=[
+            {
+                "type": "file_search",
+                "vector_store_ids": [VECTOR_STORE_ID],
+            }
+        ],
+        response_format={"type": "json_object"},
+    )
+    try:
+        raw = resp.output[0].content[0].text
+        data = json.loads(raw)
+    except Exception:
+        return []
+
+    raw_matches = data.get("matches") or data.get("similar_docs") or []
+    matches: List[Tuple[str, float]] = []
+    for item in raw_matches:
+        path = item.get("path") or item.get("wiki_path") or item.get("id")
+        score = item.get("score")
+        if path and score is not None:
+            matches.append((path, float(score)))
+    matches.sort(key=lambda x: x[1], reverse=True)
+    return matches[:max_results]
