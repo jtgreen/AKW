@@ -484,6 +484,7 @@ def build_wiki_document(
     base_url: str,
     wiki_root: Path,
 ) -> WikiDocument:
+    fm = dict(front_matter)  # shallow copy
     tags_raw = front_matter.get("tags")
     if isinstance(tags_raw, str):
         tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
