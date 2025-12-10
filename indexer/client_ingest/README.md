@@ -90,6 +90,14 @@ python client_ingest/auto_filer/auto_ingest.py \
   --git-commit
 ```
 
+  python3 client_ingest/auto_filer/auto_ingest.py \
+  --watch-dir "~/Dropbox/Papers/BSOS-Wiki" \
+  --wiki-root ~/Dev/bsos-wiki \
+  --pdf-upload root@bsos.wiki:/opt/bsos-wiki-pdfs \
+  --pdf-url-base https://bsos.wiki/pdfs \
+  --deduplicate \
+  
+  
 Workflow:
 
 1. Scans the watch directory for PDFs missing from `batch_ingested.log` (comments are ignored).  
