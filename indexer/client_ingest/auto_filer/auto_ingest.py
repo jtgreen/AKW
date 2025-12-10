@@ -23,6 +23,7 @@ from typing import Iterable, List, Optional, Set, Tuple
 import yaml
 from dotenv import load_dotenv
 from openai import OpenAI
+from pypdf import PdfReader
 
 # Paths
 SCRIPT_PATH = Path(__file__).resolve()
@@ -229,6 +230,19 @@ def gather_tags(wiki_root: Path) -> List[str]:
     return sorted(tags)
 
 
+def extract_pdf_text(pdf_path: Path, limit: int = 20000) -> str:
+    reader = PdfReader(str(pdf_path))
+    chunks = []
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        if text:
+            chunks.append(text)
+        if sum(len(c) for c in chunks) >= limit:
+            break
+    combined = "\n".join(chunks)
+    return combined[:limit]
+
+
 def run_ingest_preview(
     pdf_path: Path,
     ingest_script: Path,
@@ -328,7 +342,6 @@ Key points:
                 "vector_store_ids": [VECTOR_STORE_ID],
             }
         ],
-        response_format={"type": "json_object"},
     )
     raw = resp.output[0].content[0].text
     logger.log(f"Classifier raw response: {raw}")
@@ -375,7 +388,6 @@ def find_similar_documents(
                 "vector_store_ids": [VECTOR_STORE_ID],
             }
         ],
-        response_format={"type": "json_object"},
     )
     try:
         raw = resp.output[0].content[0].text
@@ -480,15 +492,15 @@ def build_wiki_document(
     else:
         tags = []
 
-    body = md_path.read_text(encoding="utf-8")
-    fm, body_text = parse_front_matter(body)
-    body_content = body_text.strip()
-    content = f"# {title}\n\n{body_content}"
-
     path = fm.get("path")
     if not path:
         path = md_path.relative_to(wiki_root).with_suffix("").as_posix()
     title = fm.get("title") or md_path.stem
+    body = md_path.read_text(encoding="utf-8")
+    _, body_text = parse_front_matter(body)
+    body_content = body_text.strip()
+    content = f"# {title}\n\n{body_content}"
+
     wiki_url = f"{base_url.rstrip('/')}/{path}"
 
     doc = WikiDocument(
@@ -625,15 +637,17 @@ def process_pdf(
     state_file: Path,
     logger: Logger,
 ) -> None:
-    logger.log(f"Starting preview ingest for {pdf_path}")
-    summary, summary_text = run_ingest_preview(pdf_path, args.ingest_script, args.wiki_root, logger)
+    logger.log(f"Extracting plain text for dedupe...")
+    plain_text = extract_pdf_text(pdf_path)
     if args.deduplicate:
-        logger.log("Running duplicate check via vector store...")
-        matches = find_similar_documents(summary_text, args.model)
+        logger.log("Running duplicate check via vector store (PDF text)...")
+        matches = find_similar_documents(plain_text, args.model)
         if matches and matches[0][1] >= DEDUP_THRESHOLD:
             logger.log(f"Duplicate detected for {pdf_path}; similarity {matches[0][1]:.3f}. Skipping.")
             logger.log_duplicate(pdf_path, matches)
             return
+    logger.log(f"Starting preview ingest for {pdf_path}")
+    summary, _ = run_ingest_preview(pdf_path, args.ingest_script, args.wiki_root, logger)
     logger.log("Classifying directory + tags...")
     directory, chosen_tags = classify_document(summary, directories, tags, args.model, args.max_tags, logger)
     logger.log(f"Classification result: directory='{directory}', tags={chosen_tags}")
