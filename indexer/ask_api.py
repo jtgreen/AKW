@@ -21,6 +21,7 @@ VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
 
 AVAILABLE_MODELS = {
     "gpt-5.1": "GPT-5.1",
+    "gpt-5.1-instant": "GPT-5.1 Instant",
     "gpt-5.1-mini": "GPT-5.1 Mini",
     "gpt-4.1": "GPT-4.1",
     "gpt-4.1-mini": "GPT-4.1 Mini",
