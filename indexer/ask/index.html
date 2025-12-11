@@ -115,6 +115,27 @@
       font-size: 0.95rem;
     }
 
+    .source-item-title {
+      font-weight: 600;
+    }
+
+    .source-links {
+      margin-top: 0.35rem;
+      font-size: 0.9rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .source-links a {
+      color: #8bd1ff;
+      text-decoration: none;
+    }
+
+    .source-links a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 600px) {
       .app {
         padding: 1.5rem;
@@ -171,6 +192,8 @@
     const sourcesEl = document.getElementById("sources");
     const button = form.querySelector("button");
     const modelSelect = document.getElementById("model");
+    const BSOS_BASE = "https://bsos.wiki/";
+    const isInternalLink = (url = "") => url.startsWith(BSOS_BASE);
 
     async function askWiki(query, model) {
       const response = await fetch("/ask/api/ask", {
@@ -183,6 +206,50 @@
         throw new Error(detail || response.statusText);
       }
       return response.json();
+    }
+
+    function renderSources(sources) {
+      sourcesEl.innerHTML = "";
+      if (!Array.isArray(sources) || !sources.length) {
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      sources.forEach((source, idx) => {
+        const div = document.createElement("div");
+        div.className = "source-item";
+
+        const title = document.createElement("div");
+        title.className = "source-item-title";
+        title.textContent = source.title || `Source ${idx + 1}`;
+        div.appendChild(title);
+
+        const linksRow = document.createElement("div");
+        linksRow.className = "source-links";
+
+        if (source.wiki_url && isInternalLink(source.wiki_url)) {
+          const wikiLink = document.createElement("a");
+          wikiLink.href = source.wiki_url;
+          wikiLink.target = "_blank";
+          wikiLink.rel = "noopener";
+          wikiLink.textContent = "Wiki";
+          linksRow.appendChild(wikiLink);
+        }
+
+        if (source.pdf_url && isInternalLink(source.pdf_url)) {
+          const pdfLink = document.createElement("a");
+          pdfLink.href = source.pdf_url;
+          pdfLink.target = "_blank";
+          pdfLink.rel = "noopener";
+          pdfLink.textContent = "PDF";
+          linksRow.appendChild(pdfLink);
+        }
+
+        if (linksRow.childNodes.length) {
+          div.appendChild(linksRow);
+        }
+        frag.appendChild(div);
+      });
+      sourcesEl.appendChild(frag);
     }
 
     form.addEventListener("submit", async (evt) => {
@@ -207,10 +274,16 @@
           .replace(/>/g, "&gt;");
         const withMarkdownLinks = escaped.replace(
           /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-          '<a href="$2" target="_blank" rel="noopener">$1</a>'
+          (_match, label, url) =>
+            isInternalLink(url)
+              ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
+              : label
         );
         const linkified = withMarkdownLinks
           .replace(/(https?:\/\/[^\s<)]+)/g, (match, _p1, offset, text) => {
+            if (!isInternalLink(match)) {
+              return match;
+            }
             const preceding = text.slice(Math.max(0, offset - 7), offset);
             if (preceding.includes('href="') || preceding.includes("href='")) {
               return match;
@@ -219,18 +292,7 @@
           })
           .replace(/\n/g, "<br>");
         answerText.innerHTML = linkified || "No answer returned.";
-
-        sourcesEl.innerHTML = "";
-        if (Array.isArray(data.sources) && data.sources.length) {
-          const frag = document.createDocumentFragment();
-          data.sources.forEach((source, idx) => {
-            const div = document.createElement("div");
-            div.className = "source-item";
-            div.textContent = source.snippet || `Source ${idx + 1}`;
-            frag.appendChild(div);
-          });
-          sourcesEl.appendChild(frag);
-        }
+        renderSources(data.sources);
 
         answerCard.style.display = "block";
         statusEl.textContent = "Done.";
