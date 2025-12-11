@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parent
 CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
 VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
 BSOS_BASE_URL = "https://bsos.wiki"
+BSOS_URL_REGEX = re.compile(r"https://bsos\.wiki/[A-Za-z0-9_\-./]+")
 
 AVAILABLE_MODELS = {
     "gpt-5.1": "GPT-5.1",
@@ -159,6 +161,37 @@ def build_sources(file_ids: Set[str]) -> List[Source]:
     return sources
 
 
+def canonicalize_answer_links(answer_text: str, sources: List[Source]) -> str:
+    if not sources or "https://bsos.wiki/" not in answer_text:
+        return answer_text
+
+    mapping: Dict[str, str] = {}
+
+    def add_mapping(url: Optional[str]) -> None:
+        normalized = normalize_bsos_url(url)
+        if not normalized:
+            return
+        key = normalized.rstrip("/").split("/")[-1]
+        if key:
+            mapping.setdefault(key, normalized)
+
+    for source in sources:
+        add_mapping(source.wiki_url)
+        add_mapping(source.pdf_url)
+
+    if not mapping:
+        return answer_text
+
+    def replace_match(match: re.Match[str]) -> str:
+        url = match.group(0)
+        for key, replacement in mapping.items():
+            if key in url:
+                return replacement
+        return url
+
+    return BSOS_URL_REGEX.sub(replace_match, answer_text)
+
+
 @app.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
     model_name = resolve_model(req.model)
@@ -196,5 +229,6 @@ async def ask(req: AskRequest):
 
     cited_file_ids = extract_cited_file_ids(resp)
     sources = build_sources(cited_file_ids) if cited_file_ids else []
+    answer_text = canonicalize_answer_links(answer_text, sources)
 
     return AskResponse(answer=answer_text, sources=sources)
