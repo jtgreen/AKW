@@ -8,6 +8,8 @@ Given a directory of PDFs, this script:
 - Invokes ingest_paper.py for every new file, passing through any additional CLI args.
 - Records failures (e.g., too long PDF, empty text, placeholder summary) in failed_pdfs.log.
 - Streams ingest output to stdout/stderr but continues past failures automatically.
+- Ensures each generated Markdown page now starts with # "Title" (First Author, Journal, Year)
+  and that the front matter title matches the true paper title.
 """
 
 from __future__ import annotations

@@ -275,6 +275,31 @@ def extract_primary_author(authors: str) -> str:
     return cleaned.split()[0].strip() if cleaned.split() else cleaned
 
 
+def format_primary_heading(title: str, authors: str, journal: str, year: str) -> str:
+    base_title = (title or "").strip()
+    if not base_title:
+        base_title = "Untitled"
+    normalized_title = base_title.strip().strip('"').strip()
+    quoted_title = f"\"{normalized_title or base_title}\""
+
+    meta_bits: List[str] = []
+    primary_author = extract_primary_author(authors)
+    if primary_author:
+        meta_bits.append(primary_author)
+
+    journal_clean = str(journal or "").strip()
+    if journal_clean:
+        meta_bits.append(journal_clean)
+
+    year_clean = str(year or "").strip()
+    if year_clean:
+        meta_bits.append(year_clean)
+
+    if meta_bits:
+        return f"# {quoted_title} ({', '.join(meta_bits)})"
+    return f"# {quoted_title}"
+
+
 def build_pdf_filename(summary: Dict[str, Any], original_suffix: str) -> str:
     suffix = original_suffix if original_suffix.startswith(".") else f".{original_suffix.lstrip('.') or 'pdf'}"
     short_title = slugify_component(summary.get("short_title") or summary.get("title") or "paper", MAX_FILENAME_COMPONENT_LENGTH)
@@ -349,7 +374,7 @@ def build_markdown(
         "---",
         f"doc_id: {json.dumps(doc_id_value)}",
         f"kind: {json.dumps(kind)}",
-        f"title: {json.dumps(short_title)}",
+        f"title: {json.dumps(title)}",
         f"description: {json.dumps(description)}",
         "published: true",
         "editor: markdown",
@@ -381,8 +406,9 @@ def build_markdown(
             )
         )
 
+    heading = format_primary_heading(title, authors, journal, year)
     body_lines = [
-        f"# {title}",
+        heading,
         "",
         f"**One-sentence takeaway:** {one_sentence}",
     ]

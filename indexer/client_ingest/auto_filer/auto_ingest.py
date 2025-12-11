@@ -200,6 +200,43 @@ def parse_front_matter(text: str) -> Tuple[dict, str]:
     return fm, body
 
 
+def extract_primary_author(authors: str) -> str:
+    cleaned = str(authors or "").strip()
+    if not cleaned:
+        return ""
+    separators = [";", " and ", " & ", ",", "|", "/"]
+    for sep in separators:
+        if sep in cleaned:
+            return cleaned.split(sep)[0].strip()
+    parts = cleaned.split()
+    return parts[0].strip() if parts else ""
+
+
+def format_primary_heading(title: str, authors: str, journal: str, year: str) -> str:
+    base_title = (title or "").strip()
+    if not base_title:
+        base_title = "Untitled"
+    normalized_title = base_title.strip().strip('"').strip()
+    quoted_title = f"\"{normalized_title or base_title}\""
+
+    meta_bits: List[str] = []
+    primary_author = extract_primary_author(authors)
+    if primary_author:
+        meta_bits.append(primary_author)
+
+    journal_clean = str(journal or "").strip()
+    if journal_clean:
+        meta_bits.append(journal_clean)
+
+    year_clean = str(year or "").strip()
+    if year_clean:
+        meta_bits.append(year_clean)
+
+    if meta_bits:
+        return f"# {quoted_title} ({', '.join(meta_bits)})"
+    return f"# {quoted_title}"
+
+
 def dump_front_matter(front_matter: dict, body: str) -> str:
     fm_yaml = yaml.safe_dump(front_matter, sort_keys=False).strip()
     return f"---\n{fm_yaml}\n---\n\n{body.lstrip()}"
@@ -497,10 +534,14 @@ def build_wiki_document(
     if not path:
         path = md_path.relative_to(wiki_root).with_suffix("").as_posix()
     title = fm.get("title") or md_path.stem
+    authors = fm.get("authors") or ""
+    journal = fm.get("journal") or ""
+    year = fm.get("year") or ""
     body = md_path.read_text(encoding="utf-8")
     _, body_text = parse_front_matter(body)
     body_content = body_text.strip()
-    content = f"# {title}\n\n{body_content}"
+    heading = format_primary_heading(title, authors, journal, year)
+    content = f"{heading}\n\n{body_content}"
 
     wiki_url = f"{base_url.rstrip('/')}/{path}"
 
