@@ -26,6 +26,7 @@ CONFIG_PATH = ROOT / "config.yaml"
 CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
 
 REPO_ROOT = Path(CONFIG["wiki_repo_root"])
+WIKI_BASE_URL = str(os.getenv("WIKI_BASE_URL") or CONFIG.get("wiki_base_url") or "https://example.com").rstrip("/")
 OPENAI_CFG = CONFIG.get("openai", {})
 VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
 STATE_PATH = ROOT / ".indexer_state.json"
@@ -254,7 +255,7 @@ def build_documents(md_path: Path) -> List[WikiDocument]:
     tags = normalize_tags(fm.get("tags"))
     year = str(fm["year"]) if "year" in fm else None
     source_type = fm.get("source_type")
-    wiki_url = f"https://bsos.wiki/{wiki_path}"
+    wiki_url = f"{WIKI_BASE_URL}/{wiki_path.lstrip('/')}"
     pdf_url = fm.get("pdf_url")
     pdf_text_url = fm.get("pdf_text_url")
 

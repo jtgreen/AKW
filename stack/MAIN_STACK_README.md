@@ -1,3 +1,3 @@
-# Main Stack
+# Stack (Deprecated README)
 
-Placeholder for infrastructure notes (Docker Compose services, deployment steps, etc.).
+This README has been consolidated into `README_updated.md` at the repo root.

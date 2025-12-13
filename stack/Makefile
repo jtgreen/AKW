@@ -1,9 +1,17 @@
-# --- Paths ---
-REPO_ROOT = /opt/knowledge-wiki-remote
-STACK_DIR = $(REPO_ROOT)/stack
-DATA_DIR  = /opt/bsos-wiki-data
-ASK_SERVICE = bsos-ask        # Adjust to your actual service name
-CADDYFILE = /etc/caddy/Caddyfile
+# Optional: load defaults from stack/.env if present.
+-include .env
+
+# --- Required knobs (override via env or make vars) ---
+WIKI_NAME ?= my-wiki
+DOMAIN ?= example.com
+WIKI_DATA_DIR ?= /opt/$(WIKI_NAME)-data
+
+# --- Derived paths ---
+STACK_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+REPO_ROOT := $(abspath $(STACK_DIR)/..)
+
+ASK_SERVICE ?= ask
+CADDYFILE ?= /etc/caddy/Caddyfile
 
 # --- Commands ---
 DOCKER_COMPOSE = docker-compose -f $(STACK_DIR)/docker-compose.yml
@@ -42,11 +50,11 @@ ps:
 # --- Health checks ---
 health:
 	@echo "--- Testing Wiki.js ---"
-	curl -Ik https://bsos.wiki | head -n 1
+	curl -Ik https://$(DOMAIN) | head -n 1
 	@echo "--- Testing Ask UI ---"
-	curl -Ik https://bsos.wiki/ask | head -n 1
+	curl -Ik https://$(DOMAIN)/ask | head -n 1
 	@echo "--- Testing Ask API ---"
-	curl -s -X POST https://bsos.wiki/ask/api/ask -H "Content-Type: application/json" \
+	curl -s -X POST https://$(DOMAIN)/ask/api/ask -H "Content-Type: application/json" \
 		-d '{"query": "hello from makefile"}' | head -c 200; echo
 
 # --- Full deployment ---

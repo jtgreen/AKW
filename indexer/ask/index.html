@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BSOS Wiki Assistant</title>
+  <title>Wiki Assistant</title>
   <style>
     :root {
       color-scheme: dark;
@@ -151,9 +151,9 @@
 </head>
 <body>
   <div class="app">
-    <h1>BSOS Wiki Assistant</h1>
+    <h1>Wiki Assistant</h1>
     <p class="subtitle">
-      NotebookLM-style reasoning over your hemorrhagic shock knowledge base.
+      Grounded answers from your wiki + PDFs.
     </p>
 
     <form id="ask-form">
@@ -161,7 +161,7 @@
       <textarea
         id="query"
         name="query"
-        placeholder="e.g. Summarize the cardiac mechanism of irreversible hemorrhagic shock."
+        placeholder="e.g. Summarize the key mechanism and cite sources."
         required
       ></textarea>
       <label for="model" style="font-weight:600;">Model</label>
@@ -192,8 +192,8 @@
     const sourcesEl = document.getElementById("sources");
     const button = form.querySelector("button");
     const modelSelect = document.getElementById("model");
-    const BSOS_BASE = "https://bsos.wiki/";
-    const isInternalLink = (url = "") => url.startsWith(BSOS_BASE);
+    const WIKI_BASE = `${window.location.origin.replace(/\\/+$/, "")}/`;
+    const isInternalLink = (url = "") => url.startsWith("/") || url.startsWith(WIKI_BASE);
 
     async function askWiki(query, model) {
       const response = await fetch("/ask/api/ask", {

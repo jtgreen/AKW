@@ -4,12 +4,12 @@ setup_wiki_interactive.py
 
 Fully interactive bootstrap for a fresh Ubuntu 22.04/24.04 droplet.
 
-Assumes this repo is already cloned on the server, with structure:
+This script will clone/pull the monorepo into `/opt/<repo-dir>` and expects it to have:
 
   repo_root/
     stack/
       docker-compose.yml
-      .env (will be used as base, not overwritten)
+      .env (will be created/updated by this script)
       Caddyfile (optional template; this script writes /etc/caddy/Caddyfile itself)
       ...
     indexer/
@@ -23,14 +23,13 @@ Assumes this repo is already cloned on the server, with structure:
 This script will:
 
   - Install Docker, Docker Compose v2, Caddy, UFW
-  - Create /opt/<wiki-name>-{stack,data,indexer}
+  - Create /opt/<wiki-name>-data (bind-mounted into Wiki.js at /wiki/data)
   - Create /opt/<wiki-name>-pdfs (served via https://<domain>/pdfs/*)
-  - Copy stack/ → /opt/<wiki-name>-stack/
-  - Copy indexer/ → /opt/<wiki-name>-indexer/
-  - Create /opt/<wiki-name>-data/{uploads,ask}
+  - Create /opt/<wiki-name>-data/{uploads,ask} for Caddy static serving
   - Write /etc/caddy/Caddyfile for the given DOMAIN
-  - Inject OPENAI_API_KEY into /opt/<wiki-name>-stack/.env
-  - Run `docker-compose up -d --build` in /opt/<wiki-name>-stack
+  - Write stack/.env with WIKI_NAME/WIKI_DATA_DIR/OPENAI_API_KEY/etc
+  - Update indexer/config.yaml to match the wiki name/domain
+  - Run `docker-compose up -d --build` in stack/
 
 Run as root:
 
@@ -38,9 +37,11 @@ Run as root:
 """
 
 import os
+import re
 import sys
 import shutil
 import subprocess
+import secrets
 from pathlib import Path
 
 
@@ -49,15 +50,105 @@ def run(cmd, check=True):
     subprocess.run(cmd, check=check)
 
 
-def replace_tokens(path: Path, replacements: dict[str, str]) -> None:
-    if not path.exists():
+def prompt_nonempty(label: str, example: str | None = None, default: str | None = None) -> str:
+    suffix = ""
+    if example:
+        suffix = f" (e.g. {example})"
+    if default:
+        suffix += f" [default: {default}]"
+    value = input(f"{label}{suffix}: ").strip()
+    return value or (default or "")
+
+
+def require_slug(value: str, label: str) -> str:
+    value = value.strip()
+    if not value:
+        raise SystemExit(f"{label} cannot be empty.")
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", value):
+        raise SystemExit(
+            f"{label} must match [a-z0-9][a-z0-9-]* (max 63 chars). Got: {value!r}"
+        )
+    return value
+
+
+def upsert_env_vars(env_path: Path, kv: dict[str, str]) -> None:
+    env_path.parent.mkdir(parents=True, exist_ok=True)
+    existing: list[str] = []
+    if env_path.exists():
+        existing = env_path.read_text().splitlines()
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for line in existing:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in line:
+            out.append(line)
+            continue
+        key = line.split("=", 1)[0].strip()
+        if key in kv:
+            out.append(f"{key}={kv[key]}")
+            seen.add(key)
+        else:
+            out.append(line)
+            seen.add(key)
+
+    for key, val in kv.items():
+        if key not in seen:
+            out.append(f"{key}={val}")
+
+    env_path.write_text("\n".join(out).rstrip() + "\n")
+
+
+def update_indexer_config(config_path: Path, *, wiki_repo_root: Path, wiki_base_url: str, pdf_dir: Path, wiki_name: str) -> None:
+    if not config_path.exists():
         return
-    text = path.read_text()
-    original = text
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    if text != original:
-        path.write_text(text)
+
+    text = config_path.read_text()
+
+    def replace_or_add(pattern: str, replacement_line: str, *, after_key: str | None = None) -> str:
+        nonlocal text
+        if re.search(pattern, text, flags=re.MULTILINE):
+            return re.sub(pattern, replacement_line, text, flags=re.MULTILINE)
+        if after_key and re.search(after_key, text, flags=re.MULTILINE):
+            lines = text.splitlines()
+            out_lines: list[str] = []
+            inserted = False
+            for ln in lines:
+                out_lines.append(ln)
+                if not inserted and re.match(after_key, ln):
+                    out_lines.append(replacement_line)
+                    inserted = True
+            return "\n".join(out_lines) + ("\n" if text.endswith("\n") else "")
+        return text
+
+    # Top-level paths / URLs
+    text = replace_or_add(
+        r'^wiki_repo_root:\s*.*$',
+        f'wiki_repo_root: "{wiki_repo_root}"',
+    )
+    text = replace_or_add(
+        r'^wiki_base_url:\s*.*$',
+        f'wiki_base_url: "{wiki_base_url}"',
+        after_key=r"^wiki_repo_root:",
+    )
+
+    # OpenAI naming defaults (safe to overwrite; IDs are typically set later)
+    text = replace_or_add(
+        r'^\s*vector_store_name:\s*.*$',
+        f'  vector_store_name: "{wiki_name}-store"',
+    )
+    text = replace_or_add(
+        r'^\s*assistant_name:\s*.*$',
+        f'  assistant_name: "{wiki_name}-assistant"',
+    )
+
+    # PDF asset directory
+    text = replace_or_add(
+        r'^\s*local_dir:\s*.*$',
+        f'  local_dir: "{pdf_dir}"',
+    )
+
+    config_path.write_text(text)
 
 
 def main():
@@ -67,50 +158,53 @@ def main():
 
     print("=== Interactive Wiki Stack Bootstrap ===")
 
-    wiki_name = input("Wiki short name (e.g. bsos-wiki): ").strip()
-    if not wiki_name:
-        print("Wiki name cannot be empty.")
-        sys.exit(1)
+    wiki_name = require_slug(
+        prompt_nonempty("Wiki short name", example="bsos-wiki"),
+        "Wiki name",
+    )
 
-    domain = input("Domain name (e.g. bsos.wiki): ").strip()
+    domain = prompt_nonempty("Domain name", example="bsos.wiki")
     if not domain:
-        print("Domain cannot be empty.")
-        sys.exit(1)
+        raise SystemExit("Domain cannot be empty.")
 
-    email = input("Email for Let's Encrypt notifications (e.g. you@example.com): ").strip()
+    email = prompt_nonempty("Email for Let's Encrypt notifications", example="you@example.com")
     if not email:
-        print("Email cannot be empty.")
-        sys.exit(1)
+        raise SystemExit("Email cannot be empty.")
 
-    openai_api_key = input("OpenAI API key (sk-...): ").strip()
+    openai_api_key = prompt_nonempty("OpenAI API key", example="sk-...")
     if not openai_api_key:
-        print("OPENAI_API_KEY cannot be empty.")
-        sys.exit(1)
+        raise SystemExit("OPENAI_API_KEY cannot be empty.")
 
-    repo_url = input("Git repo URL (e.g. git@github.com:you/knowledge-wiki.git): ").strip()
+    repo_url = prompt_nonempty("Git repo URL", example="git@github.com:you/knowledge-wiki.git")
     if not repo_url:
-        print("Repo URL cannot be empty.")
-        sys.exit(1)
+        raise SystemExit("Repo URL cannot be empty.")
 
-    repo_dir_name = input("Directory name under /opt for this repo (default: wiki name): ").strip() or wiki_name
+    repo_dir_name = prompt_nonempty(
+        "Directory name under /opt for this monorepo clone",
+        default=wiki_name,
+    )
     repo_root = Path("/opt") / repo_dir_name
     stack_dir = repo_root / "stack"
     indexer_dir = repo_root / "indexer"
-    data_dir = repo_root / "data"
+    data_dir = Path("/opt") / f"{wiki_name}-data"
     pdf_dir = Path(f"/opt/{wiki_name}-pdfs")
+    wiki_base_url = f"https://{domain}"
+    postgres_password = prompt_nonempty(
+        "Postgres password for Wiki.js (leave blank to auto-generate)",
+        default="",
+    )
+    if not postgres_password:
+        postgres_password = secrets.token_urlsafe(24)
 
     print("\nSummary:")
     print(f"  repo_url    = {repo_url}")
-    print(f"  repo_root   = {repo_root}")
     print(f"  repo_root   = {repo_root}")
     print(f"  stack_dir   = {stack_dir}")
     print(f"  indexer_dir = {indexer_dir}")
     print(f"  data_dir    = {data_dir}")
     print(f"  pdf_dir     = {pdf_dir}")
-    print(f"  stack_dir   = {stack_dir}")
-    print(f"  indexer_dir = {indexer_dir}")
-    print(f"  data_dir    = {data_dir}")
     print(f"  domain      = {domain}")
+    print(f"  base_url    = {wiki_base_url}")
     print(f"  email       = {email}")
     print("")
 
@@ -121,29 +215,29 @@ def main():
 
     # --- System prep ---
 
-    print("\n=== [1/8] Updating system & installing base packages ===")
+    print("\n=== [1/9] Updating system & installing base packages ===")
     run(["apt", "update"])
     run(["apt", "upgrade", "-y"])
-    run(["apt", "install", "-y", "git", "curl", "ufw", "debian-keyring",
+    run(["apt", "install", "-y", "git", "curl", "ufw", "gnupg", "debian-keyring",
          "debian-archive-keyring", "apt-transport-https"])
 
-    print("\n=== [2/8] Installing Python tooling (python3, pip, venv) ===")
+    print("\n=== [2/9] Installing Python tooling (python3, pip, venv) ===")
     run(["apt", "install", "-y", "python3", "python3-pip", "python3-venv"])
 
-    print("\n=== [3/8] Configure UFW ===")
+    print("\n=== [3/9] Configure UFW ===")
     run(["ufw", "allow", "OpenSSH"], check=False)
     run(["ufw", "allow", "80/tcp"], check=False)
     run(["ufw", "allow", "443/tcp"], check=False)
     run(["ufw", "--force", "enable"])
 
-    print("\n=== [4/8] Install Docker ===")
+    print("\n=== [4/9] Install Docker ===")
     if shutil.which("docker") is None:
         run(["bash", "-lc", "curl -fsSL https://get.docker.com | bash"])
         run(["usermod", "-aG", "docker", "root"], check=False)
     else:
         print("Docker already installed.")
 
-    print("\n=== [5/8] Install Docker Compose v2 ===")
+    print("\n=== [5/9] Install Docker Compose v2 ===")
     if shutil.which("docker-compose") is None:
         compose_url = (
             f"https://github.com/docker/compose/releases/download/v2.27.0/"
@@ -195,12 +289,13 @@ def main():
         print(f"ERROR: Expected indexer/ directory at {indexer_dir}")
         sys.exit(1)
 
-    print("\n=== [8/9] Prepare data directories ===")
+    print("\n=== [8/9] Prepare data directories & config ===")
     data_dir.mkdir(parents=True, exist_ok=True)
 
     # data subdirs
     (data_dir / "uploads").mkdir(parents=True, exist_ok=True)
     (data_dir / "ask").mkdir(parents=True, exist_ok=True)
+    (data_dir / "repo").mkdir(parents=True, exist_ok=True)
     pdf_dir.mkdir(parents=True, exist_ok=True)
     # relax: we'll let containers run as uid 1000, but root can still write
     try:
@@ -215,6 +310,17 @@ def main():
     os.chmod(data_dir / "ask", 0o755)
     os.chmod(pdf_dir, 0o755)
 
+    # Seed Ask UI into /opt/<wiki>-data/ask unless the user already has one.
+    src_ask_dir = indexer_dir / "ask"
+    dst_ask_dir = data_dir / "ask"
+    if src_ask_dir.is_dir():
+        has_existing = any(dst_ask_dir.iterdir())
+        if not has_existing:
+            print(f"Seeding Ask UI from {src_ask_dir} → {dst_ask_dir}")
+            shutil.copytree(src_ask_dir, dst_ask_dir, dirs_exist_ok=True)
+        else:
+            print(f"Ask UI already present at {dst_ask_dir}; leaving as-is.")
+
     print("Setting up optional virtual environment for manual indexer runs...")
     venv_path = indexer_dir / ".venv"
     try:
@@ -226,38 +332,30 @@ def main():
     except Exception as exc:
         print(f"Warning: unable to create virtualenv: {exc}")
 
-    data_dir_str = str(data_dir)
-    stack_dir_str = str(stack_dir)
-    indexer_dir_str = str(indexer_dir)
+    # Write stack/.env (docker-compose variable substitutions)
+    env_path = stack_dir / ".env"
+    print(f"Writing stack environment file: {env_path}")
+    upsert_env_vars(
+        env_path,
+        {
+            "WIKI_NAME": wiki_name,
+            "DOMAIN": domain,
+            "WIKI_BASE_URL": wiki_base_url,
+            "WIKI_DATA_DIR": str(data_dir),
+            "POSTGRES_PASSWORD": postgres_password,
+            "OPENAI_API_KEY": openai_api_key,
+            "WIKI_PDFS_DIR": str(pdf_dir),
+        },
+    )
 
-    # Customize stack artifacts with user-provided values
-    print("Customizing stack configuration files...")
-    replace_tokens(
-        stack_dir / "Caddyfile",
-        {
-            "bsos.wiki": domain,
-            "john.travis.green@gmail.com": email,
-            "/opt/knowledge-wiki/indexer/ask": f"{indexer_dir_str}/ask",
-            "/opt/knowledge-wiki/data/uploads": f"{data_dir_str}/uploads",
-            "/opt/knowledge-wiki/pdfs": str(pdf_dir),
-        },
-    )
-    replace_tokens(
-        stack_dir / "docker-compose.yml",
-        {
-            "bsos-wiki-db": f"{wiki_name}-db",
-            "bsos-wiki-es": f"{wiki_name}-es",
-            "bsos-wiki": wiki_name,
-            "bsos-ask": f"{wiki_name}-ask",
-            "/opt/knowledge-wiki/data": data_dir_str,
-            "/opt/knowledge-wiki/indexer": indexer_dir_str,
-        },
-    )
-    replace_tokens(
-        stack_dir / "Makefile",
-        {
-            "/opt/knowledge-wiki/stack": stack_dir_str,
-        },
+    # Keep indexer/config.yaml aligned (used by manual runs like indexer_stub.py)
+    print("Updating indexer/config.yaml...")
+    update_indexer_config(
+        indexer_dir / "config.yaml",
+        wiki_repo_root=data_dir / "repo",
+        wiki_base_url=wiki_base_url,
+        pdf_dir=pdf_dir,
+        wiki_name=wiki_name,
     )
 
     print("\n=== [9/9] Configure Caddy for domain ===")
@@ -294,17 +392,6 @@ def main():
     print(f"Wrote Caddyfile to {caddyfile_path}")
     run(["systemctl", "reload", "caddy"], check=False)
     run(["systemctl", "restart", "caddy"], check=False)
-
-    # Inject OPENAI_API_KEY into stack .env
-    env_path = stack_dir / ".env"
-    print(f"\nInjecting OPENAI_API_KEY into {env_path}")
-    if not env_path.exists():
-        env_path.write_text("")  # create empty .env if needed
-    # Remove any existing OPENAI_API_KEY lines
-    lines = env_path.read_text().splitlines()
-    lines = [ln for ln in lines if not ln.strip().startswith("OPENAI_API_KEY=")]
-    lines.append(f"OPENAI_API_KEY={openai_api_key}")
-    env_path.write_text("\n".join(lines) + "\n")
 
     print("\n=== Starting docker-compose stack ===")
     os.chdir(stack_dir)

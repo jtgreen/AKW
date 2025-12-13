@@ -3,11 +3,11 @@ version: "3.9"
 services:
   db:
     image: postgres:14
-    container_name: bsos-wiki-db
+    container_name: ${WIKI_NAME:-my-wiki}-db
     environment:
       POSTGRES_DB: wiki
       POSTGRES_USER: wikijs
-      POSTGRES_PASSWORD: wikijs123    # change this later
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
     volumes:
       - dbdata:/var/lib/postgresql/data
     restart: always
@@ -16,7 +16,7 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.21
-    container_name: bsos-wiki-es
+    container_name: ${WIKI_NAME:-my-wiki}-es
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
@@ -34,7 +34,7 @@ services:
 
   wikijs:
     image: requarks/wiki:latest
-    container_name: bsos-wiki
+    container_name: ${WIKI_NAME:-my-wiki}
     depends_on:
       - db
       - elasticsearch
@@ -43,7 +43,7 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: wikijs
-      DB_PASS: wikijs123
+      DB_PASS: ${POSTGRES_PASSWORD:-change-me}
       DB_NAME: wiki
 
       # search
@@ -55,15 +55,16 @@ services:
     networks:
       - wiki_net
     volumes:
-      - /opt/bsos-wiki-data:/wiki/data   # <-- this is the bind mount
+      - ${WIKI_DATA_DIR:-/opt/my-wiki-data}:/wiki/data
 
-  bsos-ask:
+  ask:
     build:
-      context: /opt/knowledge-wiki-remote/indexer
-    container_name: bsos-ask
+      context: ../indexer
+    container_name: ${WIKI_NAME:-my-wiki}-ask
     environment:
       # pass your key into the container
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WIKI_BASE_URL=${WIKI_BASE_URL:-https://example.com}
     # if you want the app to read config.yaml baked into the image,
     # no volumes are strictly necessary. If you want to override it:
     # volumes:

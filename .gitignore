@@ -7,7 +7,7 @@ __pycache__/
 .venv_tmp/
 
 # Environment / secrets
-# .env
+.env
 
 # Editor junk
 *.swp

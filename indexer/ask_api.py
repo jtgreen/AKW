@@ -3,6 +3,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
+from urllib.parse import urlparse
 
 import yaml
 from fastapi import FastAPI, HTTPException
@@ -20,8 +21,15 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 ROOT = Path(__file__).resolve().parent
 CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
 VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
-BSOS_BASE_URL = "https://bsos.wiki"
-BSOS_URL_REGEX = re.compile(r"https://bsos\.wiki/[A-Za-z0-9_\-./]+")
+_raw_base_url = (os.getenv("WIKI_BASE_URL") or CONFIG.get("wiki_base_url") or "https://example.com").strip()
+if _raw_base_url.startswith("http://"):
+    _raw_base_url = "https://" + _raw_base_url[len("http://") :]
+elif not _raw_base_url.startswith("https://"):
+    _raw_base_url = "https://" + _raw_base_url
+
+WIKI_BASE_URL = _raw_base_url.rstrip("/")
+WIKI_HOST = urlparse(WIKI_BASE_URL).netloc
+WIKI_URL_REGEX = re.compile(rf"{re.escape(WIKI_BASE_URL)}/[A-Za-z0-9_./-]+")
 
 AVAILABLE_MODELS = {
     "gpt-5.1": "GPT-5.1",
@@ -32,7 +40,7 @@ AVAILABLE_MODELS = {
 }
 DEFAULT_MODEL = "gpt-5.1"
 
-SYSTEM_PROMPT = """You are the Battle Field Shock and Organ Support (BSOS) Wiki assistant.
+SYSTEM_PROMPT = f"""You are the Wiki assistant.
 
 All knowledge comes from the attached vector store, which contains BOTH the Markdown summaries
 and the extracted full-text of the underlying PDFs. Favor PDF evidence when it is available, but
@@ -42,8 +50,8 @@ For every response:
 1. Provide a concise, technically rigorous answer that synthesizes across the retrieved sources.
 2. Include inline citations that reference BOTH the wiki page and the PDF link (e.g., "[1]") for every major claim.
 3. End with a "Sources" section where each bullet looks like:
-   [Title (Wiki)](<actual BSOS wiki URL>) • [PDF](<actual BSOS PDF URL or \"N/A\">)
-   Only use URLs that start with https://bsos.wiki/. Never output external domains (journal sites, DOIs, etc.).
+   [Title (Wiki)](<actual wiki URL>) • [PDF](<actual PDF URL or \"N/A\">)
+   Only use URLs that start with {WIKI_BASE_URL}/. Never output external domains (journal sites, DOIs, etc.).
 4. If the store lacks the answer, state that clearly instead of speculating.
 
 Never use knowledge outside the provided documents. Cite precisely and prefer the richest evidence."""
@@ -77,7 +85,7 @@ def resolve_model(requested: str | None) -> str:
     return requested
 
 
-def normalize_bsos_url(value: Optional[str]) -> Optional[str]:
+def normalize_wiki_url(value: Optional[str]) -> Optional[str]:
     if not value:
         return None
     url = value.strip()
@@ -85,14 +93,14 @@ def normalize_bsos_url(value: Optional[str]) -> Optional[str]:
         return None
     if url.startswith("http://"):
         url = "https://" + url[len("http://") :]
-    if url.startswith(BSOS_BASE_URL):
+    if url.startswith(WIKI_BASE_URL):
         return url
     if url.startswith("/"):
-        return f"{BSOS_BASE_URL.rstrip('/')}{url}"
-    if url.startswith("bsos.wiki"):
+        return f"{WIKI_BASE_URL}{url}"
+    if WIKI_HOST and url.startswith(WIKI_HOST):
         return f"https://{url}"
     if not url.startswith("http"):
-        return f"{BSOS_BASE_URL.rstrip('/')}/{url.lstrip('/')}"
+        return f"{WIKI_BASE_URL}/{url.lstrip('/')}"
     return None
 
 
@@ -140,10 +148,10 @@ def build_sources(file_ids: Set[str]) -> List[Source]:
         except Exception:
             continue
         metadata = getattr(file_obj, "metadata", None) or {}
-        wiki_url = normalize_bsos_url(metadata.get("wiki_url") or metadata.get("primary_url"))
+        wiki_url = normalize_wiki_url(metadata.get("wiki_url") or metadata.get("primary_url"))
         if not wiki_url and metadata.get("wiki_path"):
-            wiki_url = normalize_bsos_url(metadata["wiki_path"])
-        pdf_url = normalize_bsos_url(metadata.get("pdf_url"))
+            wiki_url = normalize_wiki_url(metadata["wiki_path"])
+        pdf_url = normalize_wiki_url(metadata.get("pdf_url"))
         title = metadata.get("title") or metadata.get("wiki_path") or getattr(file_obj, "filename", None)
         doc_type = metadata.get("source_type") or metadata.get("kind")
         key = (wiki_url, pdf_url, title)
@@ -162,13 +170,13 @@ def build_sources(file_ids: Set[str]) -> List[Source]:
 
 
 def canonicalize_answer_links(answer_text: str, sources: List[Source]) -> str:
-    if not sources or "https://bsos.wiki/" not in answer_text:
+    if not sources or f"{WIKI_BASE_URL}/" not in answer_text:
         return answer_text
 
     mapping: Dict[str, str] = {}
 
     def add_mapping(url: Optional[str]) -> None:
-        normalized = normalize_bsos_url(url)
+        normalized = normalize_wiki_url(url)
         if not normalized:
             return
         key = normalized.rstrip("/").split("/")[-1]
@@ -189,7 +197,7 @@ def canonicalize_answer_links(answer_text: str, sources: List[Source]) -> str:
                 return replacement
         return url
 
-    return BSOS_URL_REGEX.sub(replace_match, answer_text)
+    return WIKI_URL_REGEX.sub(replace_match, answer_text)
 
 
 @app.post("/ask", response_model=AskResponse)
