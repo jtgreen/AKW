@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,6 +31,13 @@ DEFAULT_INGEST_SCRIPT = Path(__file__).with_name("ingest_paper.py")
 
 
 def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+    wiki_name = (os.getenv("WIKI_NAME") or "").strip()
+    domain = (os.getenv("DOMAIN") or "").strip()
+    default_upload_target = os.getenv("PDF_UPLOAD_TARGET") or (
+        f"root@{domain}:/opt/{wiki_name}-pdfs" if wiki_name and domain else None
+    )
+    default_url_base = os.getenv("PDF_URL_BASE") or (f"https://{domain}/pdfs" if domain else None)
+
     parser = argparse.ArgumentParser(
         description="Batch ingest PDFs by calling ingest_paper.py for each unseen file.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -56,11 +64,13 @@ def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument(
         "--pdf-upload-target",
         type=str,
+        default=default_upload_target,
         help="Automatically pass --pdf-upload TARGET to ingest_paper.py unless already provided.",
     )
     parser.add_argument(
         "--pdf-url-base",
         type=str,
+        default=default_url_base,
         help="Automatically pass --pdf-url-base URL to ingest_paper.py unless already provided.",
     )
     parser.add_argument(

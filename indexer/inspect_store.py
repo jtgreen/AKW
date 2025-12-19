@@ -13,11 +13,22 @@ if not OPENAI_API_KEY:
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 ROOT = Path(__file__).resolve().parent
-CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
-VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
+CONFIG_PATH = ROOT / "config.yaml"
+if not CONFIG_PATH.exists():
+    raise SystemExit(
+        "Missing indexer config.yaml. Run setup or copy examples/indexer/config.yaml.example "
+        "to indexer/config.yaml."
+    )
+CONFIG = yaml.safe_load(CONFIG_PATH.read_text()) or {}
+OPENAI_CFG = (CONFIG.get("openai") or {}) if isinstance(CONFIG, dict) else {}
+VECTOR_STORE_ID = (os.getenv("OPENAI_VECTOR_STORE_ID") or OPENAI_CFG.get("vector_store_id") or "").strip()
+if not VECTOR_STORE_ID or VECTOR_STORE_ID == "vs_TBD":
+    raise SystemExit("Vector store ID missing; set openai.vector_store_id in config.yaml.")
+
+WIKI_NAME = (os.getenv("WIKI_NAME") or (CONFIG.get("wiki_name") if isinstance(CONFIG, dict) else None) or "my-wiki").strip()
 
 def inspect_store():
-    print("Listing files for vector store:", VECTOR_STORE_ID)
+    print(f"Listing files for vector store ({WIKI_NAME}): {VECTOR_STORE_ID}")
 
     total = 0
     cursor = None

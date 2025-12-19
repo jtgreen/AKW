@@ -15,12 +15,13 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import yaml
 
-DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
+WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
+DEFAULT_REPO_ROOT = Path(f"/opt/{WIKI_NAME}-data/repo")
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
 DEFAULT_MAX_TAGS = 150
 DEFAULT_MAX_TAGS_PER_DOC = 5
 IGNORE_FILE = Path(__file__).resolve().parents[1] / "organizer.ignore.json"
-SYSTEM_PROMPT_TEMPLATE = """You are a taxonomy editor for the BSOS wiki.
+SYSTEM_PROMPT_TEMPLATE = """You are a taxonomy editor for the "{wiki_name}" wiki.
 
 Given a list of documents with existing tags, summaries, and key points, produce:
 {{
@@ -195,6 +196,7 @@ def prepare_docs_payload(catalog: dict, ignore_set: set[str]) -> list[dict]:
 
 def call_model(client: OpenAI, model: str, prompt_docs: str, max_tags: int, max_tags_per_doc: int, stream: bool) -> dict:
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
+        wiki_name=WIKI_NAME,
         max_tags=max_tags,
         max_tags_per_doc=max_tags_per_doc,
     )

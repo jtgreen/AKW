@@ -2,7 +2,7 @@
 """
 Incremental ingest helper:
 - Watches a directory tree for new PDFs not recorded in batch_ingested.log.
-- Summarizes each PDF (once) to classify it into existing hubs/tags using the BSOS vector store.
+- Summarizes each PDF (once) to classify it into existing hubs/tags using the configured vector store.
 - Files the Markdown into the chosen directory (never creating new folders or tags), uploads PDF/TXT, and
   immediately upserts the new content into the vector store so Ask can cite it without a full rebuild.
 """
@@ -50,11 +50,24 @@ if not OPENAI_API_KEY:
     raise SystemExit("OPENAI_API_KEY not set")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Config / vector store ID
-CONFIG = yaml.safe_load((INDEXER_DIR / "config.yaml").read_text())
-VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
+WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
+
+# Config / vector store ID (allow env override so this can run without a local config.yaml)
+CONFIG_PATH = INDEXER_DIR / "config.yaml"
+CONFIG = yaml.safe_load(CONFIG_PATH.read_text()) if CONFIG_PATH.exists() else {}
+OPENAI_CFG = (CONFIG.get("openai") or {}) if isinstance(CONFIG, dict) else {}
+VECTOR_STORE_ID = (os.getenv("OPENAI_VECTOR_STORE_ID") or OPENAI_CFG.get("vector_store_id") or "").strip()
 if not VECTOR_STORE_ID or VECTOR_STORE_ID == "vs_TBD":
-    raise SystemExit("Vector store ID missing in indexer/config.yaml")
+    raise SystemExit(
+        "Vector store ID missing. Set OPENAI_VECTOR_STORE_ID, or create indexer/config.yaml "
+        "from examples/indexer/config.yaml.example and set openai.vector_store_id."
+    )
+
+WIKI_BASE_URL = (
+    os.getenv("WIKI_BASE_URL")
+    or (CONFIG.get("wiki_base_url") if isinstance(CONFIG, dict) else None)
+    or "https://example.com"
+).rstrip("/")
 
 
 @dataclass
@@ -95,10 +108,10 @@ class Logger:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Incrementally ingest new PDFs into existing BSOS wiki hubs/tags."
+        description="Incrementally ingest new PDFs into existing wiki hubs/tags."
     )
     parser.add_argument("--watch-dir", type=Path, required=True, help="Directory tree to scan for PDFs.")
-    parser.add_argument("--wiki-root", type=Path, required=True, help="Local bsos-wiki repo root.")
+    parser.add_argument("--wiki-root", type=Path, required=True, help="Local wiki content repo root.")
     parser.add_argument(
         "--ingest-script",
         type=Path,
@@ -146,7 +159,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--wiki-base-url",
         type=str,
-        default="https://bsos.wiki",
+        default=WIKI_BASE_URL,
         help="Base URL used to build wiki links in vector store metadata.",
     )
     parser.add_argument(
@@ -366,7 +379,7 @@ Key points:
             {
                 "role": "system",
                 "content": (
-                    "You assign new BSOS wiki papers to existing hubs."
+                    f"You assign new papers to existing hubs in the '{WIKI_NAME}' wiki."
                     " Respond with STRICT JSON: {\"directory\": \"path\", \"tags\": [\"tag1\", ...]}"
                     " Use only the provided directories/tags. Never invent new values."
                 ),
@@ -409,7 +422,7 @@ def find_similar_documents(
             {
                 "role": "system",
                 "content": (
-                    "You check for duplicates in the BSOS wiki. "
+                    f"You check for duplicates in the '{WIKI_NAME}' wiki. "
                     "Use the file_search tool and then reply with STRICT JSON as "
                     '{"matches": [{"path": \"...\", \"score\": 0.0-1.0}]} using the wiki_path metadata.'
                 ),

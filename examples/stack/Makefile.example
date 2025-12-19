@@ -1,0 +1,43 @@
+# Optional: load defaults from `.env` if present.
+-include .env
+
+WIKI_NAME ?= my-wiki
+DOMAIN ?= example.com
+ASK_SERVICE ?= ask
+CADDYFILE ?= /etc/caddy/Caddyfile
+
+STACK_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+DOCKER_COMPOSE := docker-compose -f $(STACK_DIR)/docker-compose.yml
+
+default: deploy
+
+down:
+	$(DOCKER_COMPOSE) down
+
+up:
+	$(DOCKER_COMPOSE) up -d --build
+
+restart-ask:
+	$(DOCKER_COMPOSE) restart $(ASK_SERVICE)
+
+logs:
+	$(DOCKER_COMPOSE) logs -f
+
+ps:
+	$(DOCKER_COMPOSE) ps
+
+reload-caddy:
+	if [ -f $(CADDYFILE) ]; then systemctl reload caddy; fi
+
+health:
+	@echo "--- Testing Wiki.js ---"
+	curl -Ik https://$(DOMAIN) | head -n 1
+	@echo "--- Testing Ask UI ---"
+	curl -Ik https://$(DOMAIN)/ask | head -n 1
+	@echo "--- Testing Ask API ---"
+	curl -s -X POST https://$(DOMAIN)/ask/api/ask -H "Content-Type: application/json" \
+		-d '{"query": "hello from makefile"}' | head -c 200; echo
+
+deploy: down up reload-caddy health
+	@echo "=== Deployment complete for $(WIKI_NAME) ==="
+

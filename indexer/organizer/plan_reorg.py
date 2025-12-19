@@ -14,7 +14,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import yaml
 
-DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
+DEFAULT_WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
+DEFAULT_REPO_ROOT = Path(f"/opt/{DEFAULT_WIKI_NAME}-data/repo")
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
 DEFAULT_MAX_CATALOG_BYTES = 900_000
 IGNORE_FILE = Path(__file__).resolve().parents[1] / "organizer.ignore.json"

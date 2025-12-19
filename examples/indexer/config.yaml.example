@@ -1,0 +1,11 @@
+wiki_repo_root: "/opt/{{WIKI_NAME}}-data/repo"
+wiki_base_url: "{{WIKI_BASE_URL}}"
+
+openai:
+  vector_store_name: "{{WIKI_NAME}}-store"
+  assistant_name: "{{WIKI_NAME}}-assistant"
+  vector_store_id: "vs_TBD"
+
+pdf_assets:
+  local_dir: "/opt/{{WIKI_NAME}}-pdfs"
+

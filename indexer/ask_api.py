@@ -19,9 +19,27 @@ if not OPENAI_API_KEY:
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 ROOT = Path(__file__).resolve().parent
-CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
-VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
-_raw_base_url = (os.getenv("WIKI_BASE_URL") or CONFIG.get("wiki_base_url") or "https://example.com").strip()
+CONFIG_PATH = ROOT / "config.yaml"
+if not CONFIG_PATH.exists():
+    raise SystemExit(
+        "Missing indexer config.yaml. Run the server setup script or copy "
+        "examples/indexer/config.yaml.example to indexer/config.yaml."
+    )
+CONFIG = yaml.safe_load(CONFIG_PATH.read_text()) or {}
+OPENAI_CFG = (CONFIG.get("openai") or {}) if isinstance(CONFIG, dict) else {}
+
+VECTOR_STORE_ID = (os.getenv("OPENAI_VECTOR_STORE_ID") or OPENAI_CFG.get("vector_store_id") or "").strip()
+if not VECTOR_STORE_ID or VECTOR_STORE_ID == "vs_TBD":
+    raise SystemExit("Vector store ID missing; set openai.vector_store_id in config.yaml.")
+
+WIKI_NAME = (os.getenv("WIKI_NAME") or (CONFIG.get("wiki_name") if isinstance(CONFIG, dict) else None) or "my-wiki").strip()
+
+domain_from_env = (os.getenv("DOMAIN") or "").strip()
+_raw_base_url = (
+    os.getenv("WIKI_BASE_URL")
+    or (CONFIG.get("wiki_base_url") if isinstance(CONFIG, dict) else None)
+    or (f"https://{domain_from_env}" if domain_from_env else "https://example.com")
+).strip()
 if _raw_base_url.startswith("http://"):
     _raw_base_url = "https://" + _raw_base_url[len("http://") :]
 elif not _raw_base_url.startswith("https://"):
@@ -40,7 +58,7 @@ AVAILABLE_MODELS = {
 }
 DEFAULT_MODEL = "gpt-5.1"
 
-SYSTEM_PROMPT = f"""You are the Wiki assistant.
+SYSTEM_PROMPT = f"""You are the assistant for the "{WIKI_NAME}" wiki.
 
 All knowledge comes from the attached vector store, which contains BOTH the Markdown summaries
 and the extracted full-text of the underlying PDFs. Favor PDF evidence when it is available, but

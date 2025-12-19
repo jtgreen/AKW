@@ -59,16 +59,12 @@ services:
 
   ask:
     build:
-      context: ../indexer
+      context: ${INDEXER_DIR:-/opt/my-wiki-indexer}
     container_name: ${WIKI_NAME:-my-wiki}-ask
     environment:
-      # pass your key into the container
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WIKI_NAME=${WIKI_NAME:-my-wiki}
       - WIKI_BASE_URL=${WIKI_BASE_URL:-https://example.com}
-    # if you want the app to read config.yaml baked into the image,
-    # no volumes are strictly necessary. If you want to override it:
-    # volumes:
-    #   - /opt/knowledge-wiki/indexer/config.yaml:/app/config.yaml:ro
     restart: always
     networks:
       - wiki_net
@@ -82,3 +78,4 @@ volumes:
 networks:
   wiki_net:
     driver: bridge
+

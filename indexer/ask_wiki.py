@@ -13,12 +13,24 @@ if not OPENAI_API_KEY:
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 ROOT = Path(__file__).resolve().parent
-CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
-VECTOR_STORE_ID = CONFIG["openai"]["vector_store_id"]
+CONFIG_PATH = ROOT / "config.yaml"
+if not CONFIG_PATH.exists():
+    raise SystemExit(
+        "Missing indexer config.yaml. Run setup or copy examples/indexer/config.yaml.example "
+        "to indexer/config.yaml."
+    )
+CONFIG = yaml.safe_load(CONFIG_PATH.read_text()) or {}
+OPENAI_CFG = (CONFIG.get("openai") or {}) if isinstance(CONFIG, dict) else {}
+VECTOR_STORE_ID = (os.getenv("OPENAI_VECTOR_STORE_ID") or OPENAI_CFG.get("vector_store_id") or "").strip()
+if not VECTOR_STORE_ID or VECTOR_STORE_ID == "vs_TBD":
+    raise SystemExit("Vector store ID missing; set openai.vector_store_id in config.yaml.")
 
-SYSTEM_PROMPT = """You are the Battle Field Shock and Organ Support Wiki Research Assistant.
+WIKI_NAME = (os.getenv("WIKI_NAME") or (CONFIG.get("wiki_name") if isinstance(CONFIG, dict) else None) or "my-wiki").strip()
+WIKI_BASE_URL = (os.getenv("WIKI_BASE_URL") or (CONFIG.get("wiki_base_url") if isinstance(CONFIG, dict) else None) or "https://example.com").rstrip("/")
 
-You answer questions using ONLY the attached wiki documents (markdown pages from https://bsos.wiki).
+SYSTEM_PROMPT = f"""You are the research assistant for the \"{WIKI_NAME}\" wiki.
+
+You answer questions using ONLY the attached wiki documents (markdown pages from {WIKI_BASE_URL}).
 When responding:
 - Synthesize concisely but with enough technical detail for a physician / scientist.
 - If you reference a specific page, quote or paraphrase a sentence or two and include the page URL if it appears in the text.
@@ -27,7 +39,6 @@ When responding:
 - Use proper medical / scientific terminology.
 - Be concise and to the point.
 - Focus on the most relevant information to answer the question.
-- If the question is not related to the Battle Field Shock and Organ Support Wiki, respond that you can only answer questions related to that wiki.
 - Always prioritize accuracy and relevance in your responses.
 - Remember to cite your sources from the provided documents.
 - TRY TO SYNTHESIZE ACROSS DOCUMENTS RATHER THAN JUST QUOTING INDIVIDUAL ONES, but still cite sources.

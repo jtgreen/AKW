@@ -20,3 +20,12 @@ __pycache__/
 # Uploads
 uploaded_pdf_raw_renamed/
 uploaded_pdf_text/
+
+# Instantiated configs (generated from ./examples/)
+stack/Makefile
+stack/docker-compose.yml
+stack/Caddyfile
+stack/.env.example
+indexer/config.yaml
+indexer/ask/index.html
+indexer/.env.example

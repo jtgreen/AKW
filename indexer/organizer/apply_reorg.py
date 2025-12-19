@@ -11,7 +11,8 @@ from pathlib import Path
 
 import yaml
 
-DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
+DEFAULT_WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
+DEFAULT_REPO_ROOT = Path(f"/opt/{DEFAULT_WIKI_NAME}-data/repo")
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
 

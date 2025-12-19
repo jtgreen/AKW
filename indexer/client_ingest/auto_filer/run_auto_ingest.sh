@@ -4,17 +4,20 @@
 
 set -euo pipefail
 
-WATCH_DIR=${WATCH_DIR:-"/Users/johngreen/Dropbox/Papers/BSOS-Wiki"}
-WIKI_ROOT=${WIKI_ROOT:-"/Users/johngreen/Dev/bsos-wiki"}
-PDF_UPLOAD=${PDF_UPLOAD:-"root@bsos.wiki:/opt/bsos-wiki-pdfs"}
-PDF_URL_BASE=${PDF_URL_BASE:-"https://bsos.wiki/pdfs"}
-PDF_TEXT_DIR=${PDF_TEXT_DIR:-"/Users/johngreen/Dev/knowledge-wiki-remote/indexer/client_ingest/uploaded_pdf_text"}
-PDF_RAW_DIR=${PDF_RAW_DIR:-"/Users/johngreen/Dev/knowledge-wiki-remote/indexer/client_ingest/uploaded_pdf_raw_renamed"}
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 cd "$REPO_ROOT/indexer"
+
+WIKI_NAME=${WIKI_NAME:-"my-wiki"}
+DOMAIN=${DOMAIN:-"example.com"}
+
+WATCH_DIR=${WATCH_DIR:-"$HOME/Dropbox/Papers/$WIKI_NAME"}
+WIKI_ROOT=${WIKI_ROOT:-"$HOME/Dev/$WIKI_NAME"}
+PDF_UPLOAD=${PDF_UPLOAD:-"root@$DOMAIN:/opt/$WIKI_NAME-pdfs"}
+PDF_URL_BASE=${PDF_URL_BASE:-"https://$DOMAIN/pdfs"}
+PDF_TEXT_DIR=${PDF_TEXT_DIR:-"$REPO_ROOT/indexer/client_ingest/uploaded_pdf_text"}
+PDF_RAW_DIR=${PDF_RAW_DIR:-"$REPO_ROOT/indexer/client_ingest/uploaded_pdf_raw_renamed"}
 
 python3 client_ingest/auto_filer/auto_ingest.py \
   --watch-dir "$WATCH_DIR" \

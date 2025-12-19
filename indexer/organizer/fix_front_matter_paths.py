@@ -11,7 +11,8 @@ from typing import Tuple
 
 import yaml
 
-DEFAULT_REPO_ROOT = Path("/opt/bsos-wiki-data/repo")
+DEFAULT_WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
+DEFAULT_REPO_ROOT = Path(f"/opt/{DEFAULT_WIKI_NAME}-data/repo")
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
 
@@ -23,7 +24,7 @@ def parse_args() -> argparse.Namespace:
         "--repo-root",
         type=Path,
         default=None,
-        help="Wiki repo root (defaults to config.yaml → wiki_repo_root or /opt/bsos-wiki-data/repo).",
+        help="Wiki repo root (defaults to config.yaml → wiki_repo_root or /opt/<wiki-name>-data/repo).",
     )
     parser.add_argument(
         "--apply",

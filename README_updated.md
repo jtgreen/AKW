@@ -6,9 +6,9 @@ Repo layout:
 
 ```
 .
-├── stack/                 # docker-compose + Makefile + example Caddyfile
-├── indexer/               # Ask API, vector-store indexer, and Ask UI assets
-├── scripts/               # ops helpers (server bootstrap)
+├── examples/              # *.example templates (Makefile/yaml/html/etc)
+├── indexer/               # Ask API + vector-store indexer code (copied to /opt/<wiki-name>-indexer)
+├── scripts/               # server bootstrap (instantiates /opt/<wiki-name>-*)
 └── README_updated.md      # this file
 ```
 
@@ -18,7 +18,9 @@ Repo layout:
 
 On the server/droplet (created by `scripts/setup_wiki_interactive.py`):
 
-- Wiki stack repo clone: `/opt/<repo-dir>` (contains `stack/` + `indexer/`)
+- Monorepo clone (templates + setup script): `/opt/<repo-dir>`
+- Per-wiki stack (docker-compose + Makefile + .env): `/opt/<wiki-name>-stack`
+- Per-wiki indexer (Ask API + indexer code + config): `/opt/<wiki-name>-indexer`
 - Wiki.js persistent data (bind mounted): `/opt/<wiki-name>-data`
   - Wiki content git repo (Wiki.js Git Storage): `/opt/<wiki-name>-data/repo`
   - Wiki uploads (served at `/uploads/*`): `/opt/<wiki-name>-data/uploads`
@@ -54,9 +56,9 @@ The script will:
 
 - Install Docker, docker-compose, Caddy, UFW
 - Clone/pull this monorepo into `/opt/<repo-dir>`
-- Create `/opt/<wiki-name>-data` and `/opt/<wiki-name>-pdfs`
-- Write `stack/.env` (container names, data dir, OpenAI key, DB password, base URL). If you leave the Postgres password blank, it auto-generates one.
-- Update `indexer/config.yaml` with the wiki base URL + paths
+- Instantiate `/opt/<wiki-name>-stack`, `/opt/<wiki-name>-indexer`, `/opt/<wiki-name>-data`, `/opt/<wiki-name>-pdfs`
+- Copy templates from `examples/` (they end in `.example`) into the per-wiki directories above
+- Write `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env` (OpenAI key, wiki name, base URL, DB password, paths). If you leave the Postgres password blank, it auto-generates one.
 - Write `/etc/caddy/Caddyfile` and start the stack
 
 After it finishes:
@@ -73,26 +75,26 @@ After it finishes:
 
 ## 3) Stack config (docker-compose + env)
 
-The stack is defined in `stack/docker-compose.yml` and expects a `stack/.env` file.
+The stack is defined in `/opt/<wiki-name>-stack/docker-compose.yml` and expects `/opt/<wiki-name>-stack/.env`.
 
 Start/rebuild:
 
 ```bash
-cd /opt/<repo-dir>/stack
+cd /opt/<wiki-name>-stack
 docker-compose up -d --build
 ```
 
 Or use Make targets:
 
 ```bash
-cd /opt/<repo-dir>/stack
-make deploy DOMAIN=<domain>
+cd /opt/<wiki-name>-stack
+make deploy
 ```
 
 Notes:
 
-- `stack/.env.example` is the committed template; copy it to `stack/.env`.
-- `stack/.env` is ignored by git (don’t commit secrets).
+- Templates live in `examples/stack/` inside the monorepo clone.
+- Secrets live in `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env` (don’t commit them anywhere).
 
 ---
 
@@ -103,13 +105,13 @@ Wiki.js may purge unknown files under `/uploads`. To keep PDFs stable and aligne
 - Host directory: `/opt/<wiki-name>-pdfs`
 - Served at: `https://<domain>/pdfs/...`
 
-When rebuilding embeddings with `indexer/indexer_stub.py`, set `pdf_assets.local_dir` in `indexer/config.yaml` to the same directory so the indexer can also ingest the uploaded extracted-PDF `.txt` companions.
+When rebuilding embeddings with `indexer/indexer_stub.py`, set `pdf_assets.local_dir` in `/opt/<wiki-name>-indexer/config.yaml` to the same directory so the indexer can also ingest the uploaded extracted-PDF `.txt` companions.
 
 ---
 
 ## 5) Vector store + indexing (server-side)
 
-`indexer/config.yaml` controls:
+`/opt/<wiki-name>-indexer/config.yaml` controls:
 
 - `wiki_repo_root`: where the wiki content repo lives (usually `/opt/<wiki-name>-data/repo`)
 - `wiki_base_url`: your canonical wiki base URL (usually `https://<domain>`)
@@ -119,9 +121,10 @@ When rebuilding embeddings with `indexer/indexer_stub.py`, set `pdf_assets.local
 Typical flow:
 
 1. Create a vector store (example script):
-   - `cd /opt/<repo-dir>/indexer`
+   - `cd /opt/<wiki-name>-indexer`
    - `python3 create_vector_store.py`
-   - Copy the returned ID into `indexer/config.yaml` as `openai.vector_store_id`
+   - Copy the returned ID into `/opt/<wiki-name>-indexer/config.yaml` as `openai.vector_store_id`
+   - Rebuild Ask so it picks up the new config: `cd /opt/<wiki-name>-stack && docker-compose up -d --build ask`
 2. Upload wiki pages + PDF text into the vector store:
    - `python3 indexer_stub.py`
 
@@ -135,6 +138,7 @@ Prereqs:
 
 - Python 3.10+
 - `OPENAI_API_KEY` in your environment
+- Optional env defaults: `WIKI_NAME`, `DOMAIN`, `PDF_UPLOAD_TARGET`, `PDF_URL_BASE`, `WIKI_DEFAULT_BASE_DIR`
 - OCR deps (needed when PDFs have no embedded text):
 
 ```bash
@@ -176,7 +180,7 @@ python batch_ingest.py "/path/to/papers" \
 Incremental “auto-filer” ingest:
 
 ```bash
-python client_ingest/auto_filer/auto_ingest.py \
+python auto_filer/auto_ingest.py \
   --watch-dir "/path/to/incoming/PDFs" \
   --wiki-root /absolute/path/to/your/wiki-content-repo \
   --pdf-upload root@<domain>:/opt/<wiki-name>-pdfs \
@@ -198,6 +202,6 @@ Customization note:
 ## 7) Security & ops notes
 
 - Rotate any OpenAI keys that were ever committed anywhere.
-- Keep secrets in `stack/.env` (ignored by git). Use `stack/.env.example` as a template.
+- Keep secrets in `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env`. Use the templates under `examples/` as references.
 - The stack assumes Elasticsearch is **not** exposed publicly (no `ports:` mapping).
 - If you embed PDFs or other assets in Wiki.js pages, you may need to allow iframes in Wiki.js admin settings depending on your theme/customizations.

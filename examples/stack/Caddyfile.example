@@ -1,0 +1,27 @@
+{
+    email {{EMAIL}}
+}
+
+{{DOMAIN}} {
+    handle_path /ask/api/* {
+        reverse_proxy localhost:4000
+    }
+
+    handle_path /ask/* {
+        root * /opt/{{WIKI_NAME}}-data/ask
+        file_server
+    }
+
+    handle_path /uploads/* {
+        root * /opt/{{WIKI_NAME}}-data/uploads
+        file_server
+    }
+
+    handle_path /pdfs/* {
+        root * /opt/{{WIKI_NAME}}-pdfs
+        file_server
+    }
+
+    reverse_proxy localhost:3000
+}
+

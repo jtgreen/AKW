@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wiki Assistant</title>
+  <title>{{WIKI_NAME}} Wiki Assistant</title>
   <style>
     :root {
       color-scheme: dark;
@@ -151,7 +151,7 @@
 </head>
 <body>
   <div class="app">
-    <h1>Wiki Assistant</h1>
+    <h1>{{WIKI_NAME}} Assistant</h1>
     <p class="subtitle">
       Grounded answers from your wiki + PDFs.
     </p>
@@ -273,14 +273,14 @@
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
         const withMarkdownLinks = escaped.replace(
-          /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+          /\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g,
           (_match, label, url) =>
             isInternalLink(url)
               ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
               : label
         );
         const linkified = withMarkdownLinks
-          .replace(/(https?:\/\/[^\s<)]+)/g, (match, _p1, offset, text) => {
+          .replace(/(https?:\\/\\/[^\\s<)]+)/g, (match, _p1, offset, text) => {
             if (!isInternalLink(match)) {
               return match;
             }
@@ -290,7 +290,7 @@
             }
             return `<a href="${match}" target="_blank" rel="noopener">${match}</a>`;
           })
-          .replace(/\n/g, "<br>");
+          .replace(/\\n/g, "<br>");
         answerText.innerHTML = linkified || "No answer returned.";
         renderSources(data.sources);
 
@@ -306,3 +306,4 @@
   </script>
 </body>
 </html>
+

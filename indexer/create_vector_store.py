@@ -7,11 +7,18 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise SystemExit("OPENAI_API_KEY not set")
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
 
 ROOT = Path(__file__).resolve().parent
-CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
-store_name = (CONFIG.get("openai", {}) or {}).get("vector_store_name") or "wiki-store"
+CONFIG_PATH = ROOT / "config.yaml"
+CONFIG = yaml.safe_load(CONFIG_PATH.read_text()) if CONFIG_PATH.exists() else {}
+OPENAI_CFG = (CONFIG.get("openai") or {}) if isinstance(CONFIG, dict) else {}
+store_name = (OPENAI_CFG.get("vector_store_name") or "").strip() or f"{WIKI_NAME}-store"
 
 resp = client.vector_stores.create(name=store_name)
 

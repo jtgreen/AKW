@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import textwrap
 import subprocess
@@ -706,12 +707,20 @@ def upload_pdf(pdf_path: Path, remote_target: str, remote_filename: str, logger:
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
+    wiki_name = (os.getenv("WIKI_NAME") or "").strip()
+    domain = (os.getenv("DOMAIN") or "").strip()
+    default_base_dir = Path(os.getenv("WIKI_DEFAULT_BASE_DIR") or "research")
+    default_pdf_upload = os.getenv("PDF_UPLOAD") or (
+        f"root@{domain}:/opt/{wiki_name}-pdfs" if wiki_name and domain else None
+    )
+    default_pdf_url_base = os.getenv("PDF_URL_BASE") or (f"https://{domain}/pdfs" if domain else None)
+
     parser = argparse.ArgumentParser(description="Ingest a PDF into the wiki as Markdown.")
     parser.add_argument("pdf", type=Path, help="Path to the PDF to ingest.")
     parser.add_argument(
         "--base-dir",
         type=Path,
-        default=Path("research/cardiovascular/hemorrhagic_shock"),
+        default=default_base_dir,
         help="Root directory for generated Markdown.",
     )
     parser.add_argument(
@@ -738,11 +747,13 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument(
         "--pdf-upload",
         type=str,
+        default=default_pdf_upload,
         help="Optional scp target (e.g. user@host:/var/www/wiki/static/papers) to upload the PDF.",
     )
     parser.add_argument(
         "--pdf-url-base",
         type=str,
+        default=default_pdf_url_base,
         help="Base URL for linking the uploaded PDF (e.g. https://wiki.example.com/static/papers).",
     )
     parser.add_argument(

@@ -23,14 +23,44 @@ if not OPENAI_API_KEY:
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "config.yaml"
-CONFIG = yaml.safe_load(CONFIG_PATH.read_text())
+CONFIG: dict = {}
+if CONFIG_PATH.exists():
+    CONFIG = yaml.safe_load(CONFIG_PATH.read_text()) or {}
 
-REPO_ROOT = Path(CONFIG["wiki_repo_root"])
-WIKI_BASE_URL = str(os.getenv("WIKI_BASE_URL") or CONFIG.get("wiki_base_url") or "https://example.com").rstrip("/")
-OPENAI_CFG = CONFIG.get("openai", {})
-VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
+WIKI_NAME = (os.getenv("WIKI_NAME") or (CONFIG.get("wiki_name") if isinstance(CONFIG, dict) else None) or "").strip()
+if not WIKI_NAME and not CONFIG:
+    raise SystemExit(
+        "WIKI_NAME is not set and config.yaml is missing. "
+        "Run setup or set WIKI_NAME/WIKI_REPO_ROOT in your environment."
+    )
+if not WIKI_NAME:
+    WIKI_NAME = "my-wiki"
+
+WIKI_REPO_ROOT_ENV = (os.getenv("WIKI_REPO_ROOT") or "").strip()
+WIKI_DATA_DIR_ENV = (os.getenv("WIKI_DATA_DIR") or "").strip()
+default_repo_root = Path(f"/opt/{WIKI_NAME}-data/repo")
+REPO_ROOT = Path(
+    WIKI_REPO_ROOT_ENV
+    or (CONFIG.get("wiki_repo_root") if isinstance(CONFIG, dict) else None)
+    or (Path(WIKI_DATA_DIR_ENV) / "repo" if WIKI_DATA_DIR_ENV else default_repo_root)
+).expanduser()
+
+domain_from_env = (os.getenv("DOMAIN") or "").strip()
+WIKI_BASE_URL = str(
+    os.getenv("WIKI_BASE_URL")
+    or (CONFIG.get("wiki_base_url") if isinstance(CONFIG, dict) else None)
+    or (f"https://{domain_from_env}" if domain_from_env else "https://example.com")
+).rstrip("/")
+
+OPENAI_CFG = (CONFIG.get("openai") or {}) if isinstance(CONFIG, dict) else {}
+VECTOR_STORE_ID = (os.getenv("OPENAI_VECTOR_STORE_ID") or OPENAI_CFG.get("vector_store_id") or "vs_TBD").strip()
 STATE_PATH = ROOT / ".indexer_state.json"
-PDF_ASSETS_CFG = CONFIG.get("pdf_assets", {}) or {}
+PDF_ASSETS_CFG = (CONFIG.get("pdf_assets") or {}) if isinstance(CONFIG, dict) else {}
+pdf_dir_env = (os.getenv("WIKI_PDFS_DIR") or "").strip()
+if pdf_dir_env and not PDF_ASSETS_CFG.get("local_dir"):
+    PDF_ASSETS_CFG["local_dir"] = pdf_dir_env
+elif not PDF_ASSETS_CFG.get("local_dir"):
+    PDF_ASSETS_CFG["local_dir"] = f"/opt/{WIKI_NAME}-pdfs"
 PDF_TEXT_ROOT: Optional[Path] = None
 if PDF_ASSETS_CFG.get("local_dir"):
     candidate = Path(PDF_ASSETS_CFG["local_dir"]).expanduser()
