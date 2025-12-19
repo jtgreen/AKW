@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import hashlib
 import os
 from pathlib import Path
 import re
 import yaml
-from dataclasses import dataclass, asdict
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import List, Tuple, Optional
+from urllib.parse import urlparse
 from openai import OpenAI
 
 from dotenv import load_dotenv
@@ -27,22 +29,73 @@ REPO_ROOT = Path(CONFIG["wiki_repo_root"])
 OPENAI_CFG = CONFIG.get("openai", {})
 VECTOR_STORE_ID = OPENAI_CFG.get("vector_store_id", "vs_TBD")
 STATE_PATH = ROOT / ".indexer_state.json"
+PDF_ASSETS_CFG = CONFIG.get("pdf_assets", {}) or {}
+PDF_TEXT_ROOT: Optional[Path] = None
+if PDF_ASSETS_CFG.get("local_dir"):
+    candidate = Path(PDF_ASSETS_CFG["local_dir"]).expanduser()
+    if candidate.exists():
+        PDF_TEXT_ROOT = candidate.resolve()
+    else:
+        print(f"Warning: pdf_assets.local_dir '{candidate}' not found; PDF text files will be skipped.")
 
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
 @dataclass
 class WikiDocument:
     """Logical document ready to be sent to OpenAI vector store."""
-    path: str          # wiki path, e.g. "shock/hemorrhage/cardiac/..."
-    url: str           # https://bsos.wiki/<path>
+    path: str          # wiki path or derived key (e.g. "...::pdf")
+    url: str           # primary citation URL (wiki page or pdf)
     title: str
     tags: List[str]
     year: str | None
     source_type: str | None
     content: str       # text to index (title + body)
+    wiki_url: Optional[str] = None
+    pdf_url: Optional[str] = None
+    pdf_text_url: Optional[str] = None
 
 
 # ------------------- Helpers -------------------
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Upload Markdown summaries and PDF text into the configured OpenAI vector store."
+    )
+    parser.add_argument(
+        "--force-clear",
+        action="store_true",
+        help="Skip the confirmation prompt when clearing an existing vector store before re-indexing.",
+    )
+    return parser.parse_args()
+
+
+def list_vector_store_file_ids() -> list[str]:
+    file_ids: list[str] = []
+    cursor = None
+    while True:
+        resp = client.vector_stores.files.list(
+            vector_store_id=VECTOR_STORE_ID,
+            limit=100,
+            after=cursor,
+        )
+        if not resp.data:
+            break
+        for f in resp.data:
+            file_ids.append(f.id)
+        if getattr(resp, "has_more", False):
+            cursor = resp.data[-1].id
+        else:
+            break
+    return file_ids
+
+
+def clear_vector_store(file_ids: list[str]) -> None:
+    if not file_ids:
+        return
+    print(f"Deleting {len(file_ids)} file(s) from vector store {VECTOR_STORE_ID}...")
+    for file_id in file_ids:
+        client.vector_stores.files.delete(vector_store_id=VECTOR_STORE_ID, file_id=file_id)
+    print("Vector store cleared.")
 
 def upsert_document_to_vector_store(doc: WikiDocument):
     """
@@ -54,16 +107,21 @@ def upsert_document_to_vector_store(doc: WikiDocument):
         raise RuntimeError("Vector store ID not set in config.yaml")
 
     metadata = {
-        "kind": "wiki",
+        "kind": doc.source_type or "wiki",
         "wiki_path": doc.path,
-        "wiki_url": doc.url,
+        "wiki_url": doc.wiki_url or doc.url,
+        "primary_url": doc.url,
+        "pdf_url": doc.pdf_url,
+        "pdf_text_url": doc.pdf_text_url,
         "title": doc.title,
         "tags": doc.tags,
         "year": doc.year,
         "source_type": doc.source_type,
     }
 
-    file_name = f"{doc.path.replace('/', '_')}.md"
+    safe_path = re.sub(r"[^A-Za-z0-9._-]+", "_", doc.path)
+    extension = ".txt" if (doc.source_type == "pdf_text") else ".md"
+    file_name = f"{safe_path}{extension}"
     file_bytes = doc.content.encode("utf-8")
 
     # Preferred path: new vector store upload helper
@@ -167,34 +225,83 @@ def normalize_tags(raw) -> List[str]:
     return []
 
 
-def build_document(md_path: Path) -> WikiDocument | None:
+def find_pdf_text_candidate(md_path: Path, pdf_text_url: Optional[str]) -> Optional[Path]:
+    """Return a Path to the extracted PDF text file if we can find one."""
+    sibling = md_path.with_suffix(".txt")
+    if sibling.exists():
+        return sibling
+
+    if pdf_text_url and PDF_TEXT_ROOT:
+        parsed = urlparse(pdf_text_url)
+        name = Path(parsed.path).name
+        if name:
+            candidate = PDF_TEXT_ROOT / name
+            if candidate.exists():
+                return candidate
+    return None
+
+
+def build_documents(md_path: Path) -> List[WikiDocument]:
     text = md_path.read_text(encoding="utf-8")
     fm, body = parse_front_matter(text)
 
     # You may choose to ignore unpublished pages
     if fm.get("published") is False:
-        return None
+        return []
 
     wiki_path = wiki_path_from_file(md_path, fm)
     title = fm.get("title") or md_path.stem
     tags = normalize_tags(fm.get("tags"))
     year = str(fm["year"]) if "year" in fm else None
     source_type = fm.get("source_type")
+    wiki_url = f"https://bsos.wiki/{wiki_path}"
+    pdf_url = fm.get("pdf_url")
+    pdf_text_url = fm.get("pdf_text_url")
 
-    # Content: title as H1 + body
-    content = f"# {title}\n\n{body.strip()}\n"
+    source_meta_lines = ["Sources:"]
+    source_meta_lines.append(f"- Wiki: {wiki_url}")
+    if pdf_url:
+        source_meta_lines.append(f"- PDF: {pdf_url}")
+    if pdf_text_url:
+        source_meta_lines.append(f"- PDF Text: {pdf_text_url}")
+    source_meta = "\n".join(source_meta_lines)
 
-    url = f"https://bsos.wiki/{wiki_path}"
-
-    return WikiDocument(
-        path=wiki_path,
-        url=url,
-        title=title,
-        tags=tags,
-        year=year,
-        source_type=source_type,
-        content=content,
+    docs: List[WikiDocument] = []
+    md_content = f"# {title}\n\n{source_meta}\n\n{body.strip()}\n"
+    docs.append(
+        WikiDocument(
+            path=wiki_path,
+            url=wiki_url,
+            title=title,
+            tags=tags,
+            year=year,
+            source_type=source_type or "wiki",
+            content=md_content,
+            wiki_url=wiki_url,
+            pdf_url=pdf_url,
+            pdf_text_url=pdf_text_url,
+        )
     )
+
+    text_path = find_pdf_text_candidate(md_path, pdf_text_url)
+    if text_path and text_path.exists():
+        pdf_text = text_path.read_text(encoding="utf-8", errors="ignore").strip()
+        if pdf_text:
+            pdf_doc = WikiDocument(
+                path=f"{wiki_path}::pdf",
+                url=pdf_url or wiki_url,
+                title=f"{title} (Full PDF Text)",
+                tags=tags,
+                year=year,
+                source_type="pdf_text",
+                content=f"# {title} — Full PDF Text\n\n{source_meta}\n\n{pdf_text}\n",
+                wiki_url=wiki_url,
+                pdf_url=pdf_url,
+                pdf_text_url=pdf_text_url,
+            )
+            docs.append(pdf_doc)
+
+    return docs
 
 
 def walk_markdown_files():
@@ -209,30 +316,45 @@ def walk_markdown_files():
 # ------------------- Main (for now: just inspect) -------------------
 
 def main():
+    args = parse_args()
     print(f"Using wiki repo at: {REPO_ROOT}")
     print(f"Vector store: {VECTOR_STORE_ID}\n")
 
     if not REPO_ROOT.exists():
         raise SystemExit("Repo root does not exist!")
-
-    state = load_index_state()
+    existing_file_ids = list_vector_store_file_ids()
+    if existing_file_ids:
+        proceed = args.force_clear
+        if not proceed:
+            answer = input(
+                f"Vector store {VECTOR_STORE_ID} already contains {len(existing_file_ids)} files. "
+                "Delete them and re-index? [y/N]: "
+            ).strip().lower()
+            proceed = answer == "y"
+        if not proceed:
+            print("Aborting without changes.")
+            return
+        clear_vector_store(existing_file_ids)
+        if STATE_PATH.exists():
+            STATE_PATH.unlink()
+        state = {}
+    else:
+        state = load_index_state()
     total = 0
     uploaded = 0
     for md_path in walk_markdown_files():
-        doc = build_document(md_path)
-        if doc is None:
-            continue
+        docs = build_documents(md_path)
+        for doc in docs:
+            doc_hash = compute_document_hash(doc)
+            if state.get(doc.path) == doc_hash:
+                print(f"Skipping unchanged: {doc.title}")
+                total += 1
+                continue
 
-        doc_hash = compute_document_hash(doc)
-        if state.get(doc.path) == doc_hash:
-            print(f"Skipping unchanged: {doc.title}")
+            upsert_document_to_vector_store(doc)
+            state[doc.path] = doc_hash
+            uploaded += 1
             total += 1
-            continue
-
-        upsert_document_to_vector_store(doc)
-        state[doc.path] = doc_hash
-        uploaded += 1
-        total += 1
 
     if uploaded:
         save_index_state(state)

@@ -1,0 +1,32 @@
+{
+    email john.travis.green@gmail.com
+}
+
+bsos.wiki {
+    # Ask API
+    handle_path /ask/api/* {
+        reverse_proxy localhost:4000
+    }
+    
+    # Ask UI (optional static HTML)
+    handle_path /ask/* {
+        root * /opt/knowledge-wiki-remote/indexer/ask
+        file_server
+    }
+
+    # Serve static PDFs (and other files) from /opt/.../uploads
+    handle_path /uploads/* {
+        root * /opt/bsos-wiki-data/uploads
+        file_server
+    }
+
+    # Serve ingest-managed PDFs outside Wiki.js' uploads directory
+    handle_path /pdfs/* {
+        root * /opt/bsos-wiki-pdfs
+        file_server
+    }
+
+    # Everything else goes to Wiki.js
+    reverse_proxy localhost:3000
+}
+

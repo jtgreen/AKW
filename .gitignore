@@ -7,9 +7,16 @@ __pycache__/
 .venv_tmp/
 
 # Environment / secrets
-.env
+# .env
 
 # Editor junk
 *.swp
 *.swo
 .DS_Store
+
+# Logs
+*.log
+
+# Uploads
+uploaded_pdf_raw_renamed/
+uploaded_pdf_text/
