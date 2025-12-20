@@ -4,8 +4,8 @@ setup_wiki_interactive.py
 
 Fully interactive bootstrap for a fresh Ubuntu 22.04/24.04 droplet.
 
-This script will clone/pull the monorepo into `/opt/<repo-dir>` and expects it to have
-templates under `examples/`:
+This script expects the monorepo already cloned into `/opt/<repo-dir>` with
+templates under `examples/` (clone it manually before running):
 
   repo_root/
     examples/
@@ -156,15 +156,16 @@ def main():
     if not openai_api_key:
         raise SystemExit("OPENAI_API_KEY cannot be empty.")
 
-    repo_url = prompt_nonempty("Git repo URL", example="git@github.com:you/knowledge-wiki.git")
-    if not repo_url:
-        raise SystemExit("Repo URL cannot be empty.")
-
     repo_dir_name = prompt_nonempty(
         "Directory name under /opt for this monorepo clone",
         default="knowledge-wiki-remote",
     )
     repo_root = Path("/opt") / repo_dir_name
+    if not repo_root.exists() or not (repo_root / ".git").is_dir():
+        raise SystemExit(
+            f"ERROR: Expected existing git clone at {repo_root}. "
+            "Clone the monorepo there before running this script."
+        )
 
     wiki_stack_dir = Path("/opt") / f"{wiki_name}-stack"
     wiki_indexer_dir = Path("/opt") / f"{wiki_name}-indexer"
@@ -183,8 +184,7 @@ def main():
     overwrite = (input("Overwrite existing per-wiki files under /opt if present? [y/N]: ").strip().lower() == "y")
 
     print("\nSummary:")
-    print(f"  repo_url    = {repo_url}")
-    print(f"  repo_root   = {repo_root}")
+    print(f"  repo_root   = {repo_root} (must already exist)")
     print(f"  stack_dir   = {wiki_stack_dir}")
     print(f"  indexer_dir = {wiki_indexer_dir}")
     print(f"  data_dir    = {data_dir}")
@@ -259,16 +259,13 @@ def main():
     else:
         print("Caddy already installed.")
 
-    print("\n=== [7/9] Fetching repository ===")
-    repo_root.parent.mkdir(parents=True, exist_ok=True)
-    if repo_root.exists():
-        if not (repo_root / ".git").is_dir():
-            print(f"ERROR: {repo_root} exists but is not a git repository.")
-            sys.exit(1)
-        print(f"{repo_root} already exists; pulling latest changes...")
-        run(["git", "-C", str(repo_root), "pull", "--ff-only"])
-    else:
-        run(["git", "clone", repo_url, str(repo_root)])
+    print("\n=== [7/9] Validating repository ===")
+    if not repo_root.exists() or not (repo_root / ".git").is_dir():
+        raise SystemExit(
+            f"ERROR: Expected existing git clone at {repo_root}. "
+            "Clone the monorepo there before running this script."
+        )
+    print(f"Using existing repository at {repo_root} (no clone/pull performed).")
 
     repo_examples = repo_root / "examples"
     if not repo_examples.is_dir():

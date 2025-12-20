@@ -44,6 +44,11 @@ Prereqs:
 - Ubuntu 22.04/24.04 droplet
 - DNS `A` record for `<domain>` pointing at the droplet
 - You can SSH as root (or a sudo user)
+- An OpenAI API key
+- Python 3.10+ installed
+- Git installed
+- Monorepo already cloned to `/opt/<repo-dir>` (contains `examples/` and `scripts/`)
+- Optional: `ufw` enabled (the script will open needed ports)
 
 Run (as root):
 
@@ -55,7 +60,6 @@ python3 scripts/setup_wiki_interactive.py
 The script will:
 
 - Install Docker, docker-compose, Caddy, UFW
-- Clone/pull this monorepo into `/opt/<repo-dir>`
 - Instantiate `/opt/<wiki-name>-stack`, `/opt/<wiki-name>-indexer`, `/opt/<wiki-name>-data`, `/opt/<wiki-name>-pdfs`
 - Copy templates from `examples/` (they end in `.example`) into the per-wiki directories above
 - Write `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env` (OpenAI key, wiki name, base URL, DB password, paths). If you leave the Postgres password blank, it auto-generates one.
@@ -205,3 +209,20 @@ Customization note:
 - Keep secrets in `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env`. Use the templates under `examples/` as references.
 - The stack assumes Elasticsearch is **not** exposed publicly (no `ports:` mapping).
 - If you embed PDFs or other assets in Wiki.js pages, you may need to allow iframes in Wiki.js admin settings depending on your theme/customizations.
+
+---
+
+## 8) Minimal working example
+
+"""Quickstart for a fresh Ubuntu 22.04/24.04 droplet:
+
+ssh root@<your-droplet-ip>
+apt update
+apt install -y python3 python3-venv python3-pip git curl
+python3 --version  # expect 3.10+ for the `str | None` hints
+
+cd /opt
+git clone https://github.com/jtgreen/AKW.git
+cd AKW
+
+python3 scripts/setup_wiki_interactive.py
