@@ -320,7 +320,8 @@ git remote set-url --push origin no_push
 
 -
 
-
+add .env w/ 
+OPENAI_API_KEY=your_key_here
 
 python batch_ingest.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai" \
   --pdf-upload-target root@aristotelian.ai:/opt/aristotelian-ai-pdfs \
