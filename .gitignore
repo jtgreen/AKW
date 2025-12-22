@@ -20,6 +20,7 @@ __pycache__/
 # Uploads
 uploaded_pdf_raw_renamed/
 uploaded_pdf_text/
+stale_batches/
 
 # Instantiated configs (generated from ./examples/)
 stack/Makefile
