@@ -186,7 +186,7 @@ Single PDF ingest:
 ```bash
 python ingest_paper.py path/to/paper.pdf \
   --wiki-root /absolute/path/to/your/wiki-content-repo \
-  --base-dir research/topic/subtopic
+  --base-dir research/topic/subtopic #NO!
 ```
 
 Batch ingest + remote PDF upload:
@@ -197,7 +197,7 @@ python batch_ingest.py "/path/to/papers" \
   --pdf-url-base https://<domain>/pdfs \
   -- \
   --wiki-root /absolute/path/to/your/wiki-content-repo \
-  --base-dir research/topic
+  --base-dir research/topic # NO!
 ```
 
 Incremental “auto-filer” ingest:
@@ -299,5 +299,31 @@ set site tree to site tree
 
 ==
 
-git config --global user.name "Aristotelian AI"
-git config --global user.email "git@aristotelian.ai"
+Set the name in git!
+
+-
+
+rendering -> html -> security -> allow iframes
+utilities -> content -> rerender all pages
+
+-
+
+install uv
+
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt (both indexer and client_ingest)
+
+-
+
+git remote set-url --push origin no_push
+
+-
+
+
+
+python batch_ingest.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai" \
+  --pdf-upload-target root@aristotelian.ai:/opt/aristotelian-ai-pdfs \
+  --pdf-url-base https://aristotelian.ai/pdfs \
+  -- \
+  --base-dir /Users/johngreen/Dev/aristotelian-ai-wiki

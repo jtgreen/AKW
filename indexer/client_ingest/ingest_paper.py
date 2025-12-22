@@ -37,8 +37,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 
 def load_env_files() -> None:
     """
-    Load environment variables from nearby .env files without overriding
-    anything that is already set in the shell.
+    Load environment variables from nearby .env files, letting .env override
+    anything already set in the shell.
     """
     searched = [
         SCRIPT_DIR / ".env",
@@ -47,10 +47,10 @@ def load_env_files() -> None:
     ]
     loaded_any = False
     for candidate in searched:
-        if load_dotenv(candidate, override=False):
+        if load_dotenv(candidate, override=True):
             loaded_any = True
     if not loaded_any:
-        load_dotenv(override=False)
+        load_dotenv(override=True)
 
 
 load_env_files()
