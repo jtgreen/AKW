@@ -37,12 +37,31 @@ Public URLs (via Caddy):
 
 ---
 
+## Prep your wiki repo
+Before bootstrapping the server, create a Git repo for your wiki content (Markdown files, images, etc.):
+
+- Go to your github and make a new repo
+- Clone it locally and then remove README.md (we'll add a temp one for the initial commit) as wiki.js wants to manage the whole repo:
+
+```bash
+echo "# tmp" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com:<your username>/<your wiki name>.git
+git push -u origin main
+git rm README.md
+git commit -m "remove tmp" # wiki js doesn't like the README.md being there
+git push
+
 ## 2) Server bootstrap (fresh Ubuntu droplet)
 
 Prereqs:
 
 - Ubuntu 22.04/24.04 droplet
 - DNS `A` record for `<domain>` pointing at the droplet
+  - if using cloudflare, make sure proxying is off (gray cloud) for now
 - You can SSH as root (or a sudo user)
 - An OpenAI API key
 - Python 3.10+ installed
@@ -217,6 +236,7 @@ Customization note:
 """Quickstart for a fresh Ubuntu 22.04/24.04 droplet:
 
 ssh root@<your-droplet-ip>
+
 apt update
 apt install -y python3 python3-venv python3-pip git curl
 python3 --version  # expect 3.10+ for the `str | None` hints
@@ -226,3 +246,58 @@ git clone https://github.com/jtgreen/AKW.git
 cd AKW
 
 python3 scripts/setup_wiki_interactive.py
+
+
+
+
+
+
+
+
+----
+
+on the new droplet:
+in /root
+ssh-keygen -t ed25519 -C "<wiki name>-server"
+# ssh-keygen -t ed25519 -C "aristotelian-ai-server"
+enter three times (accepting ~/.ssh/id_ed25519 default)
+cat ~/.ssh/id_ed25519.pub
+(copy this to github repo deploy keys with write access)
+
+now 
+cat ~/.ssh/id_ed25519
+
+add to wiki.js under content
+
+make sure SSH private key mode set to content (we're running in docker) 
+
+change to branch main
+
+/wiki/data/repo
+
+git@github.com:jtgreen/aristotelian-ai-wiki.git
+
+bi directional
+
+----
+
+
+Make homepage after making wiki.js
+add this to home.md
+
+<div style="height: 80vh;">
+  <iframe src="/ask/"
+          style="border:none;width:100%;height:100%;"
+          loading="lazy"
+          frameborder="0">
+  </iframe>
+</div>
+
+--- 
+
+set site tree to site tree
+
+==
+
+git config --global user.name "Aristotelian AI"
+git config --global user.email "git@aristotelian.ai"
