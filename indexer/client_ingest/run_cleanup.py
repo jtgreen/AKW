@@ -14,6 +14,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 STALE_ROOT = SCRIPT_DIR / "stale_batches"
 
 TARGETS = [
+    SCRIPT_DIR / "checksum.log",
     SCRIPT_DIR / "batch_ingested.log",
     SCRIPT_DIR / "failed_pdfs.log",
     SCRIPT_DIR / "ingest.log",

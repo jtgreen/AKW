@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Batch driver for ingest_paper.py with failure tracking.
+Batch driver for ingest_paper.py with checksum-based failure tracking.
 
 Given a directory of PDFs, this script:
-- Tracks which files have already been processed in batch_ingested.log.
+- Tracks which files have already been processed in checksum.log (path + sha256).
 - Walks the directory recursively to find PDF files.
-- Invokes ingest_paper.py for every new file, passing through any additional CLI args.
+- Invokes ingest_paper.py for every new-or-changed file, passing through any additional CLI args.
 - Records failures (e.g., too long PDF, empty text, placeholder summary) in failed_pdfs.log.
 - Streams ingest output to stdout/stderr but continues past failures automatically.
 - Ensures each generated Markdown page now starts with # "Title" (First Author, Journal, Year)
@@ -20,13 +20,20 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+
+from checksum_utils import (
+    CHECKSUM_LOG_PATH,
+    compute_checksum,
+    load_checksum_log,
+    write_checksum_log,
+)
 
 FAILURE_LOG_PATH = Path(__file__).with_name("failed_pdfs.log")
 FAILURE_PAYLOAD_START = "===INGEST_FAILURE_PAYLOAD_START==="
 FAILURE_PAYLOAD_END = "===INGEST_FAILURE_PAYLOAD_END==="
 
-DEFAULT_STATE_FILE = Path(__file__).with_name("batch_ingested.log")
 DEFAULT_INGEST_SCRIPT = Path(__file__).with_name("ingest_paper.py")
 
 
@@ -44,10 +51,12 @@ def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     )
     parser.add_argument("pdf_dir", type=Path, help="Directory containing PDFs to ingest.")
     parser.add_argument(
+        "--checksum-log",
         "--state-file",
+        dest="checksum_log",
         type=Path,
-        default=DEFAULT_STATE_FILE,
-        help="File that tracks which PDFs have already been ingested.",
+        default=CHECKSUM_LOG_PATH,
+        help="File that tracks PDF absolute paths and their sha256 checksums (JSONL).",
     )
     parser.add_argument(
         "--ingest-script",
@@ -76,33 +85,23 @@ def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument(
         "--rebuild-log",
         action="store_true",
-        help="Do not run ingestion; simply scan the directory and mark every PDF as ingested in the state file.",
+        help="Compute checksums for all PDFs and rewrite the checksum log without ingesting.",
     )
     return parser.parse_known_args(argv)
-
-
-def load_history(path: Path) -> Set[str]:
-    if not path.exists():
-        return set()
-    entries = set()
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            cleaned = line.strip()
-            if cleaned and not cleaned.startswith("#"):
-                entries.add(cleaned)
-    return entries
-
-
-def append_history(path: Path, entry: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(entry + "\n")
 
 
 def discover_pdfs(root: Path) -> List[Path]:
     return sorted(
         path for path in root.rglob("*") if path.is_file() and path.suffix.lower() == ".pdf"
     )
+
+
+def build_checksum_index(pdfs: List[Path]) -> Dict[str, str]:
+    """Compute checksums for all PDFs and return a mapping of resolved path -> checksum."""
+    checksums: Dict[str, str] = {}
+    for path in pdfs:
+        checksums[str(path.resolve())] = compute_checksum(path)
+    return checksums
 
 
 def split_failure_payload(text: str) -> Tuple[str, Optional[Dict[str, Any]]]:
@@ -193,7 +192,7 @@ def main(argv: List[str]) -> int:
     args, passthrough_args = parse_args(argv)
     pdf_root = args.pdf_dir.expanduser()
     ingest_script = args.ingest_script.expanduser()
-    state_path = args.state_file.expanduser()
+    checksum_log = args.checksum_log.expanduser()
     failed_log = args.failed_log.expanduser()
 
     if not pdf_root.exists():
@@ -206,15 +205,25 @@ def main(argv: List[str]) -> int:
         print(f"Ingest script not found: {ingest_script}", file=sys.stderr)
         return 1
 
-    processed = load_history(state_path)
     all_pdfs = discover_pdfs(pdf_root)
+    known_checksums = load_checksum_log(checksum_log)
+
     if args.rebuild_log:
-        print(f"Rebuilding state file at {state_path} with {len(all_pdfs)} PDFs...")
-        state_path.write_text("", encoding="utf-8")
-        for pdf_path in all_pdfs:
-            append_history(state_path, str(pdf_path.resolve()))
+        print(f"Rebuilding checksum log at {checksum_log} with {len(all_pdfs)} PDFs...")
+        rebuilt_checksums = build_checksum_index(all_pdfs)
+        write_checksum_log(rebuilt_checksums, checksum_log)
         print("Rebuild complete. No ingestion was performed.")
         return 0
+
+    computed_checksums = build_checksum_index(all_pdfs)
+
+    pending: List[Tuple[Path, str]] = []
+    for pdf_path in all_pdfs:
+        resolved = str(pdf_path.resolve())
+        checksum = computed_checksums[resolved]
+        if known_checksums.get(resolved) == checksum:
+            continue
+        pending.append((pdf_path, checksum))
 
     passthrough_args = [token for token in passthrough_args if token != "--"]
     passthrough_args = apply_default_ingest_args(
@@ -222,16 +231,17 @@ def main(argv: List[str]) -> int:
         args.pdf_upload_target,
         args.pdf_url_base,
     )
-    pending = [path for path in all_pdfs if str(path.resolve()) not in processed]
 
     if not pending:
-        print("No new PDFs to ingest. All files are up to date.")
+        print("No new or changed PDFs to ingest. All files are up to date.")
         return 0
 
     total = len(pending)
-    print(f"Found {total} PDF(s) to ingest (tracking {len(processed)} previously completed).")
+    print(
+        f"Found {total} PDF(s) to ingest (tracking {len(known_checksums)} previously completed with checksums)."
+    )
 
-    for index, pdf_path in enumerate(pending, start=1):
+    for index, (pdf_path, checksum) in enumerate(pending, start=1):
         remaining = total - index
         resolved = str(pdf_path.resolve())
         print(f"[{index}/{total}] Ingesting {pdf_path} (remaining: {remaining})")
@@ -241,8 +251,8 @@ def main(argv: List[str]) -> int:
             print(f"Recorded failure for {pdf_path} (exit code {code}). Continuing batch.", file=sys.stderr)
             continue
 
-        append_history(state_path, resolved)
-        processed.add(resolved)
+        known_checksums[resolved] = checksum
+        write_checksum_log(known_checksums, checksum_log)
 
     print("Batch ingest complete.")
     return 0

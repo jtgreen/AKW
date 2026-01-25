@@ -328,3 +328,23 @@ python batch_ingest.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai" \
   --pdf-url-base https://aristotelian.ai/pdfs \
   -- \
   --base-dir /Users/johngreen/Dev/aristotelian-ai-wiki
+
+  ---
+
+   run_cleanup.py: moves checksum.log (and legacy batch_ingested.log), failed_pdfs.log, ingest.log, ingest_std_out.log, uploaded_pdf_text/, and uploaded_pdf_raw_renamed/ into stale_batches/<YYYYMMDD-HHMMSS>/, skipping anything missing.
+Updated .gitignore to ignore stale_batches/.
+Use it from indexer/client_ingest:
+
+python run_cleanup.py
+
+backfill_checksums.py: hash an existing PDF directory and upsert entries into checksum.log without ingesting.
+
+python backfill_checksums.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai"
+
+
+
+python batch_ingest.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai" \
+  --pdf-upload-target root@aristotelian.ai:/opt/aristotelian-ai-pdfs \
+  --pdf-url-base https://aristotelian.ai/pdfs \
+  -- \
+  --base-dir /Users/johngreen/Dev/aristotelian-ai-wiki
