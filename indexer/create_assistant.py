@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 from pathlib import Path
+import textwrap
 
 import yaml
 from dotenv import load_dotenv
@@ -31,20 +32,42 @@ WIKI_BASE_URL = str(
 if VECTOR_STORE_ID == "vs_TBD":
     raise SystemExit("Set openai.vector_store_id in config.yaml first.")
 
+instructions = textwrap.dedent(
+    f"""
+    You are the research assistant for the "{WIKI_NAME}" wiki.
+    You always ground answers in the retrieved documents (Markdown summaries + full PDF text).
+    Reason over both sources, but favor the richer PDF text when resolving facts.
+
+    Retrieved documents:
+    - Each retrieved document begins with YAML front-matter like:
+      doc_id, kind, title, year, authors, slug, pdf_url, pdf_text_url.
+
+    Every response must:
+    - Synthesize multiple sources when possible.
+    - Include inline citations referencing BOTH the wiki page and the PDF link for each claim.
+    - Never rely on outside knowledge.
+    - If the vector store does not contain an answer, say so explicitly and STOP.
+
+    Citations & Sources rules (mandatory):
+    1) Every factual claim must be supported by citations to retrieved text.
+    2) You MUST cite using the document's doc_id and also include the URLs from front-matter:
+       - Wiki URL: {WIKI_BASE_URL}/en/{{slug}}
+       - PDF URL: {{pdf_url}}
+    3) Inline citations must be compact and human-readable, like:
+       (Mullins & Bondarenko 2020; Wiki: /en/<slug>; PDF: <pdf_url>; doc_id=<doc_id>)
+    4) End every response with a "Sources" section listing each distinct doc used exactly once in this format:
+       - <title> (<year>) — <authors> • [Wiki]({WIKI_BASE_URL}/en/<slug>) • [PDF](<pdf_url>) • doc_id=<doc_id>
+
+    Failure modes:
+    - If you cannot find the needed front-matter fields in the retrieved text, say "Missing front-matter for citation formatting"
+      and still cite what you have.
+    - If the vector store does not contain an answer, say so explicitly and STOP.
+    """
+).strip()
+
 assistant = client.assistants.create(
     name=ASSISTANT_NAME,
-    instructions=(
-        f"You are the research assistant for the \"{WIKI_NAME}\" wiki.\n"
-        "You always ground answers in the retrieved documents (Markdown summaries + full PDF text).\n"
-        "Reason over both sources, but favor the richer PDF text when resolving facts.\n"
-        "Every response must:\n"
-        "- Synthesize multiple sources when possible.\n"
-        "- Include inline citations referencing BOTH the wiki page and the PDF link for each claim.\n"
-        f"- End with a \"Sources\" section listing items as "
-        f"[Title (Wiki)]({WIKI_BASE_URL}/...) • [PDF]({WIKI_BASE_URL}/pdfs/...).\n"
-        "- If the vector store does not contain an answer, say so explicitly.\n"
-        "Never rely on outside knowledge.\n"
-    ),
+    instructions=instructions,
     model="gpt-5.1",
     tools=[{"type": "file_search", "vector_store_ids": [VECTOR_STORE_ID]}],
 )
