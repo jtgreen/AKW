@@ -87,6 +87,12 @@ def parse_args(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         action="store_true",
         help="Compute checksums for all PDFs and rewrite the checksum log without ingesting.",
     )
+    parser.add_argument(
+        "--completed-pdfs-dir",
+        type=Path,
+        default=None,
+        help="Directory of already ingested PDFs; checksums here are treated as completed and will be skipped.",
+    )
     return parser.parse_known_args(argv)
 
 
@@ -207,6 +213,15 @@ def main(argv: List[str]) -> int:
 
     all_pdfs = discover_pdfs(pdf_root)
     known_checksums = load_checksum_log(checksum_log)
+    known_checksum_values = set(known_checksums.values())
+
+    if args.completed_pdfs_dir:
+        completed_dir = args.completed_pdfs_dir.expanduser()
+        if completed_dir.exists() and completed_dir.is_dir():
+            completed_checksums = build_checksum_index(discover_pdfs(completed_dir))
+            known_checksum_values.update(completed_checksums.values())
+        else:
+            print(f"Completed PDFs directory not found or not a dir: {completed_dir}", file=sys.stderr)
 
     if args.rebuild_log:
         print(f"Rebuilding checksum log at {checksum_log} with {len(all_pdfs)} PDFs...")
@@ -221,7 +236,7 @@ def main(argv: List[str]) -> int:
     for pdf_path in all_pdfs:
         resolved = str(pdf_path.resolve())
         checksum = computed_checksums[resolved]
-        if known_checksums.get(resolved) == checksum:
+        if checksum in known_checksum_values:
             continue
         pending.append((pdf_path, checksum))
 
@@ -238,7 +253,7 @@ def main(argv: List[str]) -> int:
 
     total = len(pending)
     print(
-        f"Found {total} PDF(s) to ingest (tracking {len(known_checksums)} previously completed with checksums)."
+        f"Found {total} PDF(s) to ingest (tracking {len(known_checksum_values)} previously completed checksums)."
     )
 
     for index, (pdf_path, checksum) in enumerate(pending, start=1):
@@ -252,6 +267,7 @@ def main(argv: List[str]) -> int:
             continue
 
         known_checksums[resolved] = checksum
+        known_checksum_values.add(checksum)
         write_checksum_log(known_checksums, checksum_log)
 
     print("Batch ingest complete.")

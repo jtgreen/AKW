@@ -567,14 +567,20 @@ def load_doc_id_registry(root: Path, ignore_dirs: Set[str]) -> Dict[str, Path]:
     return registry
 
 
-def ensure_unique_doc_id(doc_id: str, root: Path, ignore_dirs: Set[str]) -> None:
+def ensure_unique_doc_id(doc_id: str, root: Path, ignore_dirs: Set[str]) -> str:
     registry = load_doc_id_registry(root, ignore_dirs)
     existing = registry.get(doc_id)
-    if existing:
-        raise IngestFailure(
-            "duplicate_doc_id",
-            f"doc_id '{doc_id}' already exists at {existing}",
-        )
+    if not existing:
+        return doc_id
+
+    # Duplicate doc_id: generate a new one by suffixing an incrementing number.
+    base = doc_id
+    counter = 2
+    while True:
+        candidate = f"{base}-{counter}"
+        if candidate not in registry:
+            return candidate
+        counter += 1
 
 
 def register_doc_id(doc_id: str, root: Path, md_path: Path) -> None:
@@ -904,7 +910,10 @@ def run_ingest(args: argparse.Namespace) -> int:
         figure_summaries, figure_usage = summarize_figures(figure_captions, model=args.model)
         wiki_path_prefix = infer_wiki_prefix(base_dir, wiki_root, args.wiki_path_prefix)
         if not args.dry_run and doc_id_scope:
-            ensure_unique_doc_id(doc_id, doc_id_scope, ignore_dirs)
+            unique_doc_id = ensure_unique_doc_id(doc_id, doc_id_scope, ignore_dirs)
+            if unique_doc_id != doc_id:
+                logger.log(f"doc_id collision for '{doc_id}'; using '{unique_doc_id}' instead.")
+            doc_id = unique_doc_id
 
         total_prompt_tokens = summary_usage.get("prompt_tokens", 0) + figure_usage.get("prompt_tokens", 0)
         total_completion_tokens = summary_usage.get("completion_tokens", 0) + figure_usage.get("completion_tokens", 0)
