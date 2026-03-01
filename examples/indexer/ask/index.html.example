@@ -192,7 +192,7 @@
     const sourcesEl = document.getElementById("sources");
     const button = form.querySelector("button");
     const modelSelect = document.getElementById("model");
-    const WIKI_BASE = `${window.location.origin.replace(/\\/+$/, "")}/`;
+    const WIKI_BASE = `${window.location.origin.replace(/\/+$/, "")}/`;
     const isInternalLink = (url = "") => url.startsWith("/") || url.startsWith(WIKI_BASE);
 
     async function askWiki(query, model) {
@@ -273,14 +273,14 @@
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
         const withMarkdownLinks = escaped.replace(
-          /\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g,
+          /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
           (_match, label, url) =>
             isInternalLink(url)
               ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
               : label
         );
         const linkified = withMarkdownLinks
-          .replace(/(https?:\\/\\/[^\\s<)]+)/g, (match, _p1, offset, text) => {
+          .replace(/(https?:\/\/[^\s<)]+)/g, (match, _p1, offset, text) => {
             if (!isInternalLink(match)) {
               return match;
             }
@@ -290,7 +290,7 @@
             }
             return `<a href="${match}" target="_blank" rel="noopener">${match}</a>`;
           })
-          .replace(/\\n/g, "<br>");
+          .replace(/\n/g, "<br>");
         answerText.innerHTML = linkified || "No answer returned.";
         renderSources(data.sources);
 
