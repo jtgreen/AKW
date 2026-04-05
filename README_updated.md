@@ -257,6 +257,9 @@ For a wiki with ~1400 docs, `--max-batch-docs 150` produces ~10 batches. Each ba
 
 - `build_catalog.py` skips directories starting with `_` or `.` (line 98). Use staging dirs like `new_ingest/` (no underscore prefix).
 - `apply_reorg.py` defaults to dry-run. Use `--apply` to execute moves.
+- `apply_reorg.py` will never move protected files (`home.md`, `home.html`) even if the LLM assigns them to a hub.
+- `apply_reorg.py` handles duplicate destinations (same paper ingested twice under different filenames) by moving the duplicate source to `_duplicates/` in the wiki repo for manual review, rather than crashing.
+- **Important:** Before batch-ingesting new PDFs, run `backfill_checksums.py` against your existing PDF directory so that checksum dedup catches papers that were ingested before checksum tracking was added. Without this, papers with different filenames but identical content will produce duplicate markdown files.
 - After reorg, all wiki paths change, so `indexer_stub.py` state is stale — use `--force-clear` to rebuild the vector store.
 - The `.env` file for organizer scripts is found via `dotenv` search (walks up from CWD). If you have `OPENAI_API_KEY` set in your shell environment, `dotenv` won't override it. Use `unset OPENAI_API_KEY` first if the shell value is stale.
 

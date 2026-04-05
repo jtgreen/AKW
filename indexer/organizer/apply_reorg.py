@@ -15,6 +15,7 @@ DEFAULT_WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
 DEFAULT_REPO_ROOT = Path(f"/opt/{DEFAULT_WIKI_NAME}-data/repo")
 FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
+PROTECTED_FILES = {"home.md", "home.html"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -129,13 +130,27 @@ def apply_plan(
         new_tags = entry.get("new_tags") or []
         hub_ids = entry.get("hub_ids") or []
 
+        if Path(old_rel).name in PROTECTED_FILES:
+            print(f"  SKIP (protected): {old_rel}")
+            continue
+
         src = repo_root / old_rel
         dst = repo_root / new_rel
 
         if not src.exists():
-            raise FileNotFoundError(f"Source file not found: {src}")
+            print(f"  SKIP (source missing): {old_rel}")
+            continue
         if dst.exists() and dst.resolve() != src.resolve():
-            raise FileExistsError(f"Destination already exists: {dst}")
+            print(f"  DUPLICATE: {old_rel} -> {new_rel} (moving source to _duplicates/)")
+            dup_dir = repo_root / "_duplicates"
+            dup_dir.mkdir(parents=True, exist_ok=True)
+            dup_dst = dup_dir / src.name
+            counter = 1
+            while dup_dst.exists():
+                dup_dst = dup_dir / f"{src.stem}_{counter}{src.suffix}"
+                counter += 1
+            src.rename(dup_dst)
+            continue
 
         dst.parent.mkdir(parents=True, exist_ok=True)
         text = src.read_text(encoding="utf-8")

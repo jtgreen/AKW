@@ -254,6 +254,8 @@ def prepare_docs_and_taxonomy(
     missing = []
     for doc in catalog.get("docs", []):
         path = doc.get("path")
+        if path in ignore_set or Path(path).name in ignore_set:
+            continue
         tags = tag_lookup.get(path)
         if tags is None:
             tags = []
