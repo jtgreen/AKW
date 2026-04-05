@@ -1,14 +1,31 @@
 # Wiki Stack Monorepo (Wiki.js + Ask + Ingestion)
 
-This repo is a template monorepo for deploying a Wiki.js instance plus an “Ask” (RAG) API/UI backed by an OpenAI vector store, and for running a laptop-side PDF → Markdown ingestion pipeline.
+This repo is a template monorepo for deploying a Wiki.js instance plus an "Ask" (RAG) API/UI backed by an OpenAI vector store, and for running a laptop-side PDF → Markdown ingestion pipeline.
 
 Repo layout:
 
 ```
 .
 ├── examples/              # *.example templates (Makefile/yaml/html/etc)
-├── indexer/               # Ask API + vector-store indexer code (copied to /opt/<wiki-name>-indexer)
-├── scripts/               # server bootstrap (instantiates /opt/<wiki-name>-*)
+├── indexer/               # Ask API + vector-store indexer + organizer
+│   ├── client_ingest/     # Laptop-side PDF → Markdown pipeline
+│   │   ├── auto_filer/    # Incremental watch-dir auto-ingest
+│   │   ├── batch_ingest.py
+│   │   ├── ingest_paper.py
+│   │   ├── checksum_utils.py
+│   │   ├── backfill_checksums.py
+│   │   └── run_cleanup.py
+│   ├── organizer/         # LLM-driven wiki reorganization & tagging
+│   │   ├── build_catalog.py
+│   │   ├── plan_tags.py
+│   │   ├── plan_reorg.py
+│   │   ├── apply_reorg.py
+│   │   ├── fix_front_matter_paths.py
+│   │   └── fix_titles_and_headings.py
+│   ├── indexer_stub.py    # Vector store uploader
+│   ├── ask_api.py         # FastAPI RAG query server
+│   └── create_vector_store.py
+├── scripts/               # Server bootstrap (instantiates /opt/<wiki-name>-*)
 └── README_updated.md      # this file
 ```
 
@@ -37,314 +54,273 @@ Public URLs (via Caddy):
 
 ---
 
-## Prep your wiki repo
-Before bootstrapping the server, create a Git repo for your wiki content (Markdown files, images, etc.):
-
-- Go to your github and make a new repo
-- Clone it locally and then remove README.md (we'll add a temp one for the initial commit) as wiki.js wants to manage the whole repo:
-
-```bash
-echo "# tmp" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin git@github.com:<your username>/<your wiki name>.git
-git push -u origin main
-git rm README.md
-git commit -m "remove tmp" # wiki js doesn't like the README.md being there
-git push
-
 ## 2) Server bootstrap (fresh Ubuntu droplet)
 
 Prereqs:
 
 - Ubuntu 22.04/24.04 droplet
-- DNS `A` record for `<domain>` pointing at the droplet
-  - if using cloudflare, make sure proxying is off (gray cloud) for now
-- You can SSH as root (or a sudo user)
+- DNS `A` record for `<domain>` pointing at the droplet (if using Cloudflare, disable proxying initially)
+- SSH access as root (or sudo user)
 - An OpenAI API key
-- Python 3.10+ installed
-- Git installed
-- Monorepo already cloned to `/opt/<repo-dir>` (contains `examples/` and `scripts/`)
-- Optional: `ufw` enabled (the script will open needed ports)
+- Python 3.10+, Git installed
 
-Run (as root):
+Run:
 
 ```bash
 sudo -i
+cd /opt
+git clone https://github.com/jtgreen/AKW.git
+cd AKW
 python3 scripts/setup_wiki_interactive.py
 ```
 
-The script will:
-
-- Install Docker, docker-compose, Caddy, UFW
-- Instantiate `/opt/<wiki-name>-stack`, `/opt/<wiki-name>-indexer`, `/opt/<wiki-name>-data`, `/opt/<wiki-name>-pdfs`
-- Copy templates from `examples/` (they end in `.example`) into the per-wiki directories above
-- Write `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env` (OpenAI key, wiki name, base URL, DB password, paths). If you leave the Postgres password blank, it auto-generates one.
-- Write `/etc/caddy/Caddyfile` and start the stack
+The script installs Docker, docker-compose, Caddy, UFW and instantiates all per-wiki directories.
 
 After it finishes:
 
-1. Visit `https://<domain>` and complete the initial Wiki.js setup (admin user, etc.).
-2. In Wiki.js → Storage, enable **Git** storage and point it at:
-   - Container path: `/wiki/data/repo`
-   - Host path: `/opt/<wiki-name>-data/repo`
-3. Confirm the extra routes work:
-   - `https://<domain>/ask`
-   - `https://<domain>/pdfs/` (directory listing may be off; try a known file)
+1. Visit `https://<domain>` and complete Wiki.js setup.
+2. In Wiki.js → Storage, enable **Git** storage pointing at `/wiki/data/repo`.
+3. Confirm Ask UI at `https://<domain>/ask`.
 
 ---
 
 ## 3) Stack config (docker-compose + env)
 
-The stack is defined in `/opt/<wiki-name>-stack/docker-compose.yml` and expects `/opt/<wiki-name>-stack/.env`.
-
-Start/rebuild:
-
 ```bash
 cd /opt/<wiki-name>-stack
 docker-compose up -d --build
+# or: make deploy
 ```
 
-Or use Make targets:
-
-```bash
-cd /opt/<wiki-name>-stack
-make deploy
-```
-
-Notes:
-
-- Templates live in `examples/stack/` inside the monorepo clone.
-- Secrets live in `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env` (don’t commit them anywhere).
+Secrets live in `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env`.
 
 ---
 
 ## 4) Ingest-managed PDFs (`/pdfs/*`)
 
-Wiki.js may purge unknown files under `/uploads`. To keep PDFs stable and aligned with generated Markdown summaries, ingestion targets a dedicated directory per wiki:
-
-- Host directory: `/opt/<wiki-name>-pdfs`
-- Served at: `https://<domain>/pdfs/...`
-
-When rebuilding embeddings with `indexer/indexer_stub.py`, set `pdf_assets.local_dir` in `/opt/<wiki-name>-indexer/config.yaml` to the same directory so the indexer can also ingest the uploaded extracted-PDF `.txt` companions.
+PDFs are stored in `/opt/<wiki-name>-pdfs` and served at `https://<domain>/pdfs/...`.
 
 ---
 
 ## 5) Vector store + indexing (server-side)
 
-`/opt/<wiki-name>-indexer/config.yaml` controls:
+Config: `/opt/<wiki-name>-indexer/config.yaml`
 
-- `wiki_repo_root`: where the wiki content repo lives (usually `/opt/<wiki-name>-data/repo`)
-- `wiki_base_url`: your canonical wiki base URL (usually `https://<domain>`)
-- `openai.vector_store_id`: which vector store Ask queries
-- `pdf_assets.local_dir`: where ingest uploads place PDFs + extracted text
+```yaml
+wiki_repo_root: /opt/<wiki-name>-data/repo
+wiki_base_url: https://<domain>
+openai:
+  vector_store_id: vs_...
+  vector_store_name: <wiki-name>-store
+pdf_assets:
+  local_dir: /opt/<wiki-name>-pdfs
+```
 
-Typical flow:
+Create vector store → upload docs:
 
-1. Create a vector store (example script):
-   - `cd /opt/<wiki-name>-indexer`
-   - `python3 create_vector_store.py`
-   - Copy the returned ID into `/opt/<wiki-name>-indexer/config.yaml` as `openai.vector_store_id`
-   - Rebuild Ask so it picks up the new config: `cd /opt/<wiki-name>-stack && docker-compose up -d --build ask`
-2. Upload wiki pages + PDF text into the vector store:
-   - `python3 indexer_stub.py`
+```bash
+cd /opt/<wiki-name>-indexer
+python3 create_vector_store.py
+# copy the ID into config.yaml
+python3 indexer_stub.py
+```
+
+After a full reorganization (paths change), use `--force-clear` to wipe stale entries:
+
+```bash
+python3 indexer_stub.py --force-clear
+```
 
 ---
 
 ## 6) Laptop-side ingestion (PDF → Markdown)
 
-Ingestion scripts live in `indexer/client_ingest/` and are meant to run on your laptop (not on the droplet).
+Scripts in `indexer/client_ingest/`. Run on your laptop, not the server.
 
-Prereqs:
-
-- Python 3.10+
-- `OPENAI_API_KEY` in your environment
-- Optional env defaults: `WIKI_NAME`, `DOMAIN`, `PDF_UPLOAD_TARGET`, `PDF_URL_BASE`, `WIKI_DEFAULT_BASE_DIR`
-- OCR deps (needed when PDFs have no embedded text):
-
-```bash
-# macOS (Homebrew)
-brew install ghostscript tesseract
-
-# Ubuntu/Debian
-sudo apt install ghostscript tesseract-ocr
-```
-
-Install Python deps:
+### Setup
 
 ```bash
 cd indexer/client_ingest
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Single PDF ingest:
-
-```bash
-python ingest_paper.py path/to/paper.pdf \
-  --wiki-root /absolute/path/to/your/wiki-content-repo \
-  --base-dir research/topic/subtopic #NO!
+Create `.env`:
+```
+OPENAI_API_KEY=your_key_here
 ```
 
-Batch ingest + remote PDF upload:
+### Single PDF
 
 ```bash
-python batch_ingest.py "/path/to/papers" \
+python3 ingest_paper.py path/to/paper.pdf \
+  --wiki-root /path/to/wiki-repo \
+  --base-dir research/topic
+```
+
+### Batch ingest
+
+```bash
+python3 batch_ingest.py "/path/to/papers" \
   --pdf-upload-target root@<domain>:/opt/<wiki-name>-pdfs \
   --pdf-url-base https://<domain>/pdfs \
   -- \
-  --wiki-root /absolute/path/to/your/wiki-content-repo \
-  --base-dir research/topic # NO!
+  --wiki-root /path/to/wiki-repo \
+  --base-dir new_ingest
 ```
 
-Incremental “auto-filer” ingest:
+Key flags:
+- `--completed-pdfs-dir PATH` — skip PDFs whose checksums match files in this directory
+- `--rebuild-log` — recompute checksums without ingesting
+- Everything after `--` is passed through to `ingest_paper.py`
+
+### Auto-filer (incremental)
 
 ```bash
-python auto_filer/auto_ingest.py \
+python3 auto_filer/auto_ingest.py \
   --watch-dir "/path/to/incoming/PDFs" \
-  --wiki-root /absolute/path/to/your/wiki-content-repo \
+  --wiki-root /path/to/wiki-repo \
   --pdf-upload root@<domain>:/opt/<wiki-name>-pdfs \
   --pdf-url-base https://<domain>/pdfs
 ```
 
-Notable flags (selected):
+### Utilities
 
-- `ingest_paper.py`: `--base-dir`, `--wiki-root`, `--wiki-path-prefix`, `--doc-id`, `--model`, `--max-chars`, `--dry-run`, `--print-json`, `--pdf-upload`, `--pdf-url-base`, `--ignore-dir`, `--log-file`
-- `batch_ingest.py`: `--pdf-upload-target`, `--pdf-url-base`, `--rebuild-log`, plus any `ingest_paper.py` flags after `--`
-- `auto_ingest.py`: `--deduplicate`, `--wiki-base-url`, `--dry-run`, `--git-commit`
+```bash
+# Backfill checksums for already-ingested PDFs
+python3 backfill_checksums.py "/path/to/existing/pdfs"
 
-Customization note:
-
-- The ingestion and auto-filer prompts are currently tuned for a specific research domain; for a brand-new wiki topic you’ll want to edit prompt templates in `indexer/client_ingest/ingest_paper.py` (and `indexer/client_ingest/auto_filer/auto_ingest.py`) to match your domain.
-
----
-
-## 7) Security & ops notes
-
-- Rotate any OpenAI keys that were ever committed anywhere.
-- Keep secrets in `/opt/<wiki-name>-stack/.env` and `/opt/<wiki-name>-indexer/.env`. Use the templates under `examples/` as references.
-- The stack assumes Elasticsearch is **not** exposed publicly (no `ports:` mapping).
-- If you embed PDFs or other assets in Wiki.js pages, you may need to allow iframes in Wiki.js admin settings depending on your theme/customizations.
+# Archive old batch artifacts
+python3 run_cleanup.py
+```
 
 ---
 
-## 8) Minimal working example
+## 7) Wiki organizer (LLM-driven re-tagging & reorganization)
 
-"""Quickstart for a fresh Ubuntu 22.04/24.04 droplet:
+Scripts in `indexer/organizer/`. These scan the wiki, normalize tags, design a hub/directory structure, and apply it.
 
-ssh root@<your-droplet-ip>
+### Full pipeline
 
-apt update
-apt install -y python3 python3-venv python3-pip git curl
-python3 --version  # expect 3.10+ for the `str | None` hints
+```bash
+cd indexer/organizer
 
-cd /opt
-git clone https://github.com/jtgreen/AKW.git
-cd AKW
+# Stage 1: Build catalog (no API calls, fast)
+python3 build_catalog.py --repo-root /path/to/wiki-repo
 
-python3 scripts/setup_wiki_interactive.py
+# Stage 2a: Plan tags (LLM normalizes to ≤150 tags)
+python3 plan_tags.py \
+  --repo-root /path/to/wiki-repo \
+  --max-tags 150 --max-tags-per-doc 5
 
+# Stage 2b: Plan reorg (LLM designs hub structure + assigns docs)
+python3 plan_reorg.py \
+  --repo-root /path/to/wiki-repo \
+  --max-hubs 8 --max-depth 3
 
+# Review the plan
+python3 plan_reorg.py --repo-root /path/to/wiki-repo --print-only
 
+# Stage 3: Apply (dry-run first, then --apply)
+python3 apply_reorg.py --repo-root /path/to/wiki-repo
+python3 apply_reorg.py --repo-root /path/to/wiki-repo --apply --add-hub-ids
 
+# Fix-ups
+python3 fix_front_matter_paths.py --repo-root /path/to/wiki-repo --apply
+find /path/to/wiki-repo -type d -empty -delete
+```
 
+### Batching for large wikis
 
+Both `plan_tags.py` and `plan_reorg.py` support batching for catalogs that exceed LLM context/output limits:
 
+- `--max-batch-docs N` — max documents per LLM call (default 150). This is the primary knob to prevent output truncation.
+- `--max-batch-chars N` — max JSON chars per batch (default 700000, ~175k tokens). Prevents input overflow.
 
-----
+For a wiki with ~1400 docs, `--max-batch-docs 150` produces ~10 batches. Each batch gets a complete response.
 
-on the new droplet:
-in /root
-ssh-keygen -t ed25519 -C "<wiki name>-server"
-# ssh-keygen -t ed25519 -C "aristotelian-ai-server"
-enter three times (accepting ~/.ssh/id_ed25519 default)
+`plan_tags.py` passes a running tag list to subsequent batches for cross-batch consistency. The final `enforce_limits()` pass deduplicates and prunes globally.
+
+`plan_reorg.py` uses a two-phase approach:
+1. **Phase 1**: Single lightweight call (path + title + tags only) to design the hub structure.
+2. **Phase 2**: Batched calls to assign each doc to hubs, with the hub structure as context.
+
+### Artifacts
+
+| File | Description |
+|------|-------------|
+| `_organizer_catalog_<repo>.json` | Extracted front matter, summaries, key points |
+| `_organizer_tags_<repo>.json` | Curated tag taxonomy + per-doc assignments |
+| `_organizer_plan_<repo>.json` | Hub structure + file move mappings |
+
+### Notes
+
+- `build_catalog.py` skips directories starting with `_` or `.` (line 98). Use staging dirs like `new_ingest/` (no underscore prefix).
+- `apply_reorg.py` defaults to dry-run. Use `--apply` to execute moves.
+- After reorg, all wiki paths change, so `indexer_stub.py` state is stale — use `--force-clear` to rebuild the vector store.
+- The `.env` file for organizer scripts is found via `dotenv` search (walks up from CWD). If you have `OPENAI_API_KEY` set in your shell environment, `dotenv` won't override it. Use `unset OPENAI_API_KEY` first if the shell value is stale.
+
+---
+
+## 8) End-to-end workflow: ingest + reorg + vectorize
+
+```bash
+# 1. Batch ingest new PDFs
+cd indexer/client_ingest
+python3 batch_ingest.py ~/Dropbox/Papers/new/ \
+  --completed-pdfs-dir ~/Dropbox/Papers/already-done/ \
+  -- --wiki-root /path/to/wiki-repo --base-dir new_ingest
+
+# 2. Git checkpoint
+cd /path/to/wiki-repo
+git add -A && git commit -m "ingest: add new papers"
+
+# 3. Build catalog → plan tags → plan reorg → apply
+cd /path/to/monorepo/indexer/organizer
+python3 build_catalog.py --repo-root /path/to/wiki-repo
+python3 plan_tags.py --repo-root /path/to/wiki-repo --max-tags 150 --max-tags-per-doc 5
+python3 plan_reorg.py --repo-root /path/to/wiki-repo --max-hubs 8 --max-depth 3
+python3 apply_reorg.py --repo-root /path/to/wiki-repo          # dry-run
+python3 apply_reorg.py --repo-root /path/to/wiki-repo --apply --add-hub-ids
+
+# 4. Post-reorg cleanup
+python3 fix_front_matter_paths.py --repo-root /path/to/wiki-repo --apply
+find /path/to/wiki-repo -type d -empty -delete
+cd /path/to/wiki-repo && git add -A && git commit -m "reorg: full re-tag and reorganization"
+
+# 5. Rebuild vector store
+cd /path/to/monorepo/indexer
+python3 indexer_stub.py --force-clear
+```
+
+---
+
+## 9) Security & ops notes
+
+- Rotate any OpenAI keys that were ever committed.
+- Keep secrets in `.env` files (not committed).
+- Elasticsearch is not exposed publicly.
+- For iframes in Wiki.js: Admin → Rendering → HTML → Security → Allow iframes.
+
+---
+
+## 10) Wiki.js setup notes
+
+On the server:
+```bash
+ssh-keygen -t ed25519 -C "<wiki-name>-server"
 cat ~/.ssh/id_ed25519.pub
-(copy this to github repo deploy keys with write access)
+# Add to GitHub repo deploy keys with write access
+```
 
-now 
-cat ~/.ssh/id_ed25519
+In Wiki.js Admin → Storage → Git:
+- SSH private key mode: `content`
+- Branch: `main`
+- Repo path: `/wiki/data/repo`
+- Repo URL: `git@github.com:<user>/<wiki-repo>.git`
+- Enable bidirectional sync
 
-add to wiki.js under content
-
-make sure SSH private key mode set to content (we're running in docker) 
-
-change to branch main
-
-/wiki/data/repo
-
-git@github.com:jtgreen/aristotelian-ai-wiki.git
-
-bi directional
-
-----
-
-
-Make homepage after making wiki.js
-add this to home.md
-
-<div style="height: 80vh;">
-  <iframe src="/ask/"
-          style="border:none;width:100%;height:100%;"
-          loading="lazy"
-          frameborder="0">
-  </iframe>
-</div>
-
---- 
-
-set site tree to site tree
-
-==
-
-Set the name in git!
-
--
-
-rendering -> html -> security -> allow iframes
-utilities -> content -> rerender all pages
-
--
-
-install uv
-
-uv venv
-source .venv/bin/activate
-uv pip install -r requirements.txt (both indexer and client_ingest)
-
--
-
-git remote set-url --push origin no_push
-
--
-
-add .env w/ 
-OPENAI_API_KEY=your_key_here
-
-python batch_ingest.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai" \
-  --pdf-upload-target root@aristotelian.ai:/opt/aristotelian-ai-pdfs \
-  --pdf-url-base https://aristotelian.ai/pdfs \
-  -- \
-  --base-dir /Users/johngreen/Dev/aristotelian-ai-wiki
-
-  ---
-
-   run_cleanup.py: moves checksum.log (and legacy batch_ingested.log), failed_pdfs.log, ingest.log, ingest_std_out.log, uploaded_pdf_text/, and uploaded_pdf_raw_renamed/ into stale_batches/<YYYYMMDD-HHMMSS>/, skipping anything missing.
-Updated .gitignore to ignore stale_batches/.
-Use it from indexer/client_ingest:
-
-python run_cleanup.py
-
-backfill_checksums.py: hash an existing PDF directory and upsert entries into checksum.log without ingesting.
-
-python backfill_checksums.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai"
-
-
-
-python batch_ingest.py "/Users/johngreen/Dropbox/Papers/aristotelian-ai" \
-  --pdf-upload-target root@aristotelian.ai:/opt/aristotelian-ai-pdfs \
-  --pdf-url-base https://aristotelian.ai/pdfs \
-  -- \
-  --base-dir /Users/johngreen/Dev/aristotelian-ai-wiki
+Additional Wiki.js settings:
+- Navigation: set to site tree
+- Rendering → HTML → Security → allow iframes
+- Utilities → Content → rerender all pages

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Stage 2a: normalize/prune wiki tags before planning directories."""
+"""Stage 2a: normalize/prune wiki tags before planning directories.
+
+Supports batching for large catalogs that exceed LLM context or output limits.
+Use --max-batch-docs to control docs per batch (default 150).
+"""
 
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ DEFAULT_REPO_ROOT = Path(f"/opt/{WIKI_NAME}-data/repo")
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
 DEFAULT_MAX_TAGS = 150
 DEFAULT_MAX_TAGS_PER_DOC = 5
+DEFAULT_MAX_BATCH_DOCS = 150
 IGNORE_FILE = Path(__file__).resolve().parents[1] / "organizer.ignore.json"
 SYSTEM_PROMPT_TEMPLATE = """You are a taxonomy editor for the "{wiki_name}" wiki.
 
@@ -43,6 +48,7 @@ Rules:
 - Use only information present in the supplied document data.
 - The tag set should be defined by the total context of the documents.
 - Iterate at least 3 times to refine and improve the tag set based on this global context.
+- You MUST return a "docs" entry for EVERY document in the input. Do not skip any.
 """
 
 
@@ -100,6 +106,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=700_000,
         help="Max JSON chars per LLM batch (default 700000, ~175k tokens).",
+    )
+    parser.add_argument(
+        "--max-batch-docs",
+        type=int,
+        default=DEFAULT_MAX_BATCH_DOCS,
+        help="Max docs per LLM batch (default 150). Limits output size to avoid truncation.",
     )
     return parser.parse_args()
 
@@ -182,14 +194,16 @@ def dedupe(seq: List[str]) -> List[str]:
     return out
 
 
-def batch_docs(docs: list[dict], max_batch_chars: int) -> list[list[dict]]:
-    """Split a list of doc dicts into batches whose JSON stays under max_batch_chars."""
+def batch_docs(docs: list[dict], max_batch_chars: int, max_batch_docs: int) -> list[list[dict]]:
+    """Split docs into batches respecting both char and doc-count limits."""
     batches: list[list[dict]] = []
     current: list[dict] = []
     current_len = 2  # opening "[]"
     for doc in docs:
-        doc_len = len(json.dumps(doc, ensure_ascii=False)) + 2  # comma + space
-        if current and current_len + doc_len > max_batch_chars:
+        doc_len = len(json.dumps(doc, ensure_ascii=False)) + 2
+        chars_exceeded = current and current_len + doc_len > max_batch_chars
+        count_exceeded = len(current) >= max_batch_docs
+        if current and (chars_exceeded or count_exceeded):
             batches.append(current)
             current = [doc]
             current_len = 2 + doc_len
@@ -387,8 +401,9 @@ def main() -> None:
     }
 
     client = get_openai_client()
-    batches = batch_docs(docs_payload, args.max_batch_chars)
-    print(f"Split {len(docs_payload)} docs into {len(batches)} batch(es).")
+    batches = batch_docs(docs_payload, args.max_batch_chars, args.max_batch_docs)
+    print(f"Split {len(docs_payload)} docs into {len(batches)} batch(es) "
+          f"(max {args.max_batch_docs} docs, {args.max_batch_chars} chars per batch).")
 
     all_tags: list[dict] = []
     all_docs: list[dict] = []
@@ -409,15 +424,22 @@ def main() -> None:
         batch_result = call_model(
             client,
             args.model,
-            "Return ONLY valid JSON. Here is the document catalog with existing tags:\n"
+            f"Return ONLY valid JSON. There are {len(batch)} documents below — "
+            f"you MUST return exactly {len(batch)} entries in the 'docs' array.\n"
+            f"Here is the document catalog with existing tags:\n"
             f"{payload_text}{tag_hint}\n\nRemember: respond with JSON only.",
             args.max_tags,
             args.max_tags_per_doc,
             stream=not args.no_stream,
         )
 
+        batch_docs_returned = batch_result.get("docs", [])
         all_tags.extend(batch_result.get("tags", []))
-        all_docs.extend(batch_result.get("docs", []))
+        all_docs.extend(batch_docs_returned)
+
+        if len(batch_docs_returned) < len(batch):
+            print(f"  WARNING: batch had {len(batch)} docs but LLM returned {len(batch_docs_returned)}. "
+                  f"Missing {len(batch) - len(batch_docs_returned)} doc assignments.")
 
         # Update running tag names for next batch
         for tag in batch_result.get("tags", []):
@@ -426,6 +448,10 @@ def main() -> None:
                 running_tag_names.append(name)
 
     plan = {"tags": all_tags, "docs": all_docs}
+
+    if len(all_docs) < len(docs_payload):
+        print(f"\nWARNING: Expected {len(docs_payload)} docs but got {len(all_docs)}. "
+              f"{len(docs_payload) - len(all_docs)} docs have no tag assignments.")
 
     original_unique, pruned_unique, total_assignments = enforce_limits(
         plan, args.max_tags, args.max_tags_per_doc
@@ -442,6 +468,8 @@ def main() -> None:
             "final_unique_tags": pruned_unique,
             "total_tag_assignments": total_assignments,
             "batches": len(batches),
+            "docs_returned": len(all_docs),
+            "docs_expected": len(docs_payload),
         }
     )
 

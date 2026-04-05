@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Stage 2b: design hub/directory layout using curated tags."""
+"""Stage 2b: design hub/directory layout using curated tags.
+
+Uses a two-phase approach:
+  Phase 1: Design hub structure (single lightweight LLM call).
+  Phase 2: Assign docs to hubs in batches (respects --max-batch-docs).
+"""
 
 from __future__ import annotations
 
@@ -18,6 +23,7 @@ DEFAULT_WIKI_NAME = (os.getenv("WIKI_NAME") or "my-wiki").strip()
 DEFAULT_REPO_ROOT = Path(f"/opt/{DEFAULT_WIKI_NAME}-data/repo")
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent
 DEFAULT_MAX_CATALOG_BYTES = 900_000
+DEFAULT_MAX_BATCH_DOCS = 150
 IGNORE_FILE = Path(__file__).resolve().parents[1] / "organizer.ignore.json"
 SYSTEM_PROMPT_TEMPLATE = """You are a wiki information architect.
 
@@ -78,7 +84,8 @@ Output STRICT JSON with a single key:
     "new_tags"
   }}
 
-The new_path MUST start with a valid hub ID and use only subdirs listed in the hub structure."""
+The new_path MUST start with a valid hub ID and use only subdirs listed in the hub structure.
+You MUST return exactly one entry per input document. Do not skip any."""
 
 
 def parse_args() -> argparse.Namespace:
@@ -148,6 +155,12 @@ def parse_args() -> argparse.Namespace:
         default=700_000,
         help="Max JSON chars per LLM batch (default 700000, ~175k tokens).",
     )
+    parser.add_argument(
+        "--max-batch-docs",
+        type=int,
+        default=DEFAULT_MAX_BATCH_DOCS,
+        help="Max docs per LLM batch (default 150). Limits output size to avoid truncation.",
+    )
     return parser.parse_args()
 
 
@@ -210,14 +223,16 @@ def load_ignore_list() -> Set[str]:
     return set()
 
 
-def batch_docs(docs: list[dict], max_batch_chars: int) -> list[list[dict]]:
-    """Split a list of doc dicts into batches whose JSON stays under max_batch_chars."""
+def batch_docs(docs: list[dict], max_batch_chars: int, max_batch_docs: int) -> list[list[dict]]:
+    """Split docs into batches respecting both char and doc-count limits."""
     batches: list[list[dict]] = []
     current: list[dict] = []
     current_len = 2  # opening "[]"
     for doc in docs:
-        doc_len = len(json.dumps(doc, ensure_ascii=False)) + 2  # comma + space
-        if current and current_len + doc_len > max_batch_chars:
+        doc_len = len(json.dumps(doc, ensure_ascii=False)) + 2
+        chars_exceeded = current and current_len + doc_len > max_batch_chars
+        count_exceeded = len(current) >= max_batch_docs
+        if current and (chars_exceeded or count_exceeded):
             batches.append(current)
             current = [doc]
             current_len = 2 + doc_len
@@ -483,11 +498,11 @@ def main() -> None:
     print(f"Phase 1 complete: {len(hubs)} hubs designed.\n")
 
     # --- Phase 2: Assign docs to hubs in batches ---
-    batches = batch_docs(docs_payload, args.max_batch_chars)
-    print(f"Phase 2: Assigning {len(docs_payload)} docs in {len(batches)} batch(es)...")
+    batches = batch_docs(docs_payload, args.max_batch_chars, args.max_batch_docs)
+    print(f"Phase 2: Assigning {len(docs_payload)} docs in {len(batches)} batch(es) "
+          f"(max {args.max_batch_docs} docs per batch)...")
 
     doc_assign_prompt = DOC_ASSIGN_SYSTEM_PROMPT.format()
-    hub_context_json = json.dumps({"hubs": hubs, "tag_taxonomy": tag_taxonomy}, ensure_ascii=False)
     all_doc_assignments: list[dict] = []
 
     for i, batch in enumerate(batches):
@@ -500,13 +515,24 @@ def main() -> None:
             client,
             args.model,
             doc_assign_prompt,
-            "Return ONLY valid JSON. Assign each document to hubs and propose new paths.\n"
+            f"Return ONLY valid JSON. There are {len(batch)} documents — "
+            f"return exactly {len(batch)} entries in 'docs'.\n"
+            f"Assign each document to hubs and propose new paths.\n"
             f"{batch_payload}\n\nReturn JSON with just the 'docs' key.",
             stream=not args.no_stream,
         )
-        all_doc_assignments.extend(batch_result.get("docs", []))
+        batch_docs_returned = batch_result.get("docs", [])
+        all_doc_assignments.extend(batch_docs_returned)
+
+        if len(batch_docs_returned) < len(batch):
+            print(f"  WARNING: batch had {len(batch)} docs but LLM returned {len(batch_docs_returned)}. "
+                  f"Missing {len(batch) - len(batch_docs_returned)} doc assignments.")
 
     plan = {"hubs": hubs, "docs": all_doc_assignments}
+
+    if len(all_doc_assignments) < len(docs_payload):
+        print(f"\nWARNING: Expected {len(docs_payload)} docs but got {len(all_doc_assignments)}. "
+              f"{len(docs_payload) - len(all_doc_assignments)} docs have no hub assignments.")
 
     # Ensure final tags exactly match the curated tag plan
     for doc in plan.get("docs", []):
