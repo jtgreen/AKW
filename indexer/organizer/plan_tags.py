@@ -95,6 +95,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip the LLM call and just summarize an existing tag plan.",
     )
+    parser.add_argument(
+        "--max-batch-chars",
+        type=int,
+        default=700_000,
+        help="Max JSON chars per LLM batch (default 700000, ~175k tokens).",
+    )
     return parser.parse_args()
 
 
@@ -174,6 +180,25 @@ def dedupe(seq: List[str]) -> List[str]:
         seen.add(item)
         out.append(item)
     return out
+
+
+def batch_docs(docs: list[dict], max_batch_chars: int) -> list[list[dict]]:
+    """Split a list of doc dicts into batches whose JSON stays under max_batch_chars."""
+    batches: list[list[dict]] = []
+    current: list[dict] = []
+    current_len = 2  # opening "[]"
+    for doc in docs:
+        doc_len = len(json.dumps(doc, ensure_ascii=False)) + 2  # comma + space
+        if current and current_len + doc_len > max_batch_chars:
+            batches.append(current)
+            current = [doc]
+            current_len = 2 + doc_len
+        else:
+            current.append(doc)
+            current_len += doc_len
+    if current:
+        batches.append(current)
+    return batches
 
 
 def prepare_docs_payload(catalog: dict, ignore_set: set[str]) -> list[dict]:
@@ -361,17 +386,46 @@ def main() -> None:
         if canonicalize_tag(tag)
     }
 
-    payload_text = json.dumps(docs_payload, ensure_ascii=False)
     client = get_openai_client()
-    plan = call_model(
-        client,
-        args.model,
-        "Return ONLY valid JSON. Here is the document catalog with existing tags:\n"
-        f"{payload_text}\n\nRemember: respond with JSON only.",
-        args.max_tags,
-        args.max_tags_per_doc,
-        stream=not args.no_stream,
-    )
+    batches = batch_docs(docs_payload, args.max_batch_chars)
+    print(f"Split {len(docs_payload)} docs into {len(batches)} batch(es).")
+
+    all_tags: list[dict] = []
+    all_docs: list[dict] = []
+    running_tag_names: list[str] = []
+
+    for i, batch in enumerate(batches):
+        print(f"\n--- Batch {i+1}/{len(batches)} ({len(batch)} docs) ---")
+        payload_text = json.dumps(batch, ensure_ascii=False)
+
+        # After the first batch, include running tag list for consistency
+        tag_hint = ""
+        if running_tag_names:
+            tag_hint = (
+                f"\n\nReuse these existing tags where applicable: "
+                f"{json.dumps(running_tag_names, ensure_ascii=False)}\n"
+            )
+
+        batch_result = call_model(
+            client,
+            args.model,
+            "Return ONLY valid JSON. Here is the document catalog with existing tags:\n"
+            f"{payload_text}{tag_hint}\n\nRemember: respond with JSON only.",
+            args.max_tags,
+            args.max_tags_per_doc,
+            stream=not args.no_stream,
+        )
+
+        all_tags.extend(batch_result.get("tags", []))
+        all_docs.extend(batch_result.get("docs", []))
+
+        # Update running tag names for next batch
+        for tag in batch_result.get("tags", []):
+            name = tag.get("name")
+            if name and name not in running_tag_names:
+                running_tag_names.append(name)
+
+    plan = {"tags": all_tags, "docs": all_docs}
 
     original_unique, pruned_unique, total_assignments = enforce_limits(
         plan, args.max_tags, args.max_tags_per_doc
@@ -387,6 +441,7 @@ def main() -> None:
             "llm_initial_unique_tags": original_unique,
             "final_unique_tags": pruned_unique,
             "total_tag_assignments": total_assignments,
+            "batches": len(batches),
         }
     )
 

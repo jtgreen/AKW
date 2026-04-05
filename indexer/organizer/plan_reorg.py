@@ -30,7 +30,7 @@ Design a new directory tree under these constraints:
 - Directory depth beneath each hub must be ≤ {max_depth} (excluding the hub itself).
 - Use hub IDs that are safe for directories (lowercase, underscores).
 - Iterate at least three times to refine and improve the hub structure.
-- The hub structure should be the most effective way of organizing the information. 
+- The hub structure should be the most effective way of organizing the information.
 - Feel free to use information density measurements to guide your design.
 
 For every document:
@@ -49,6 +49,36 @@ Output STRICT JSON with keys:
   }}
 
 Do not invent content; reason only from the provided summaries, key points, and curated tags. Aim for concise, semantically meaningful directory names that capture the dominant themes."""
+
+HUB_DESIGN_SYSTEM_PROMPT = """You are a wiki information architect.
+
+Given a curated tag taxonomy and a list of document titles with their assigned tags,
+design a directory tree. Output STRICT JSON with a single key:
+- "hubs": list of {{"id", "title", "description", "subdirs": ["subdir_name", ...]}}
+
+Constraints:
+- At most {max_hubs} top-level hubs.
+- Directory depth beneath each hub must be ≤ {max_depth}.
+- Hub IDs and subdir names must be lowercase with underscores only.
+- Iterate at least three times to refine the hub structure.
+- The hub structure should be the most effective way of organizing the information.
+"""
+
+DOC_ASSIGN_SYSTEM_PROMPT = """You are a wiki information architect.
+
+You are given a fixed hub structure and a batch of documents. For each document,
+assign it to one or more hubs and propose a new POSIX path using ONLY the provided
+hub IDs and their subdirectories. Reuse tags verbatim; do NOT invent new tags.
+
+Output STRICT JSON with a single key:
+- "docs": list of {{
+    "old_path",
+    "new_path",
+    "hub_ids",
+    "new_tags"
+  }}
+
+The new_path MUST start with a valid hub ID and use only subdirs listed in the hub structure."""
 
 
 def parse_args() -> argparse.Namespace:
@@ -112,6 +142,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip the LLM call and just pretty-print the hubs/tags from an existing plan.",
     )
+    parser.add_argument(
+        "--max-batch-chars",
+        type=int,
+        default=700_000,
+        help="Max JSON chars per LLM batch (default 700000, ~175k tokens).",
+    )
     return parser.parse_args()
 
 
@@ -174,9 +210,29 @@ def load_ignore_list() -> Set[str]:
     return set()
 
 
-def prepare_prompt_payload(
+def batch_docs(docs: list[dict], max_batch_chars: int) -> list[list[dict]]:
+    """Split a list of doc dicts into batches whose JSON stays under max_batch_chars."""
+    batches: list[list[dict]] = []
+    current: list[dict] = []
+    current_len = 2  # opening "[]"
+    for doc in docs:
+        doc_len = len(json.dumps(doc, ensure_ascii=False)) + 2  # comma + space
+        if current and current_len + doc_len > max_batch_chars:
+            batches.append(current)
+            current = [doc]
+            current_len = 2 + doc_len
+        else:
+            current.append(doc)
+            current_len += doc_len
+    if current:
+        batches.append(current)
+    return batches
+
+
+def prepare_docs_and_taxonomy(
     catalog: dict, tag_plan: dict, ignore_set: Set[str]
-) -> Tuple[str, Dict[str, List[str]], Dict[str, List[str]]]:
+) -> Tuple[list[dict], list[dict], Dict[str, List[str]], Dict[str, List[str]]]:
+    """Return (tag_taxonomy, docs_payload, tag_lookup, original_tags) as structured data."""
     tag_lookup = {doc["path"]: doc.get("new_tags", []) for doc in tag_plan.get("docs", [])}
     original_tags = {doc["path"]: doc.get("tags") or [] for doc in catalog.get("docs", [])}
     docs_payload = []
@@ -198,11 +254,8 @@ def prepare_prompt_payload(
         )
     if missing:
         print(f"Warning: {len(missing)} docs missing curated tags (falling back to empty tags).")
-    payload = {
-        "tag_taxonomy": tag_plan.get("tags", []),
-        "docs": docs_payload,
-    }
-    return json.dumps(payload, ensure_ascii=False), tag_lookup, original_tags
+    tag_taxonomy = tag_plan.get("tags", [])
+    return tag_taxonomy, docs_payload, tag_lookup, original_tags
 
 
 def get_openai_client() -> OpenAI:
@@ -389,28 +442,71 @@ def main() -> None:
     if args.max_catalog_bytes and size_bytes > args.max_catalog_bytes:
         print(
             f"Warning: catalog is {size_bytes:,} bytes (> {args.max_catalog_bytes:,}). "
-            "Consider trimming summaries if you hit context limits.",
+            "Using batched mode to stay within context limits.",
             flush=True,
         )
 
     catalog = json.loads(catalog_text)
     tag_plan = load_tag_plan(tag_plan_path)
     ignore_set = load_ignore_list()
-    payload_json, tag_lookup, original_tags = prepare_prompt_payload(catalog, tag_plan, ignore_set)
+    tag_taxonomy, docs_payload, tag_lookup, original_tags = prepare_docs_and_taxonomy(
+        catalog, tag_plan, ignore_set
+    )
 
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
+    client = get_openai_client()
+
+    # --- Phase 1: Design hub structure using lightweight doc summaries ---
+    print("Phase 1: Designing hub structure...", flush=True)
+    lightweight_docs = [
+        {"path": d["path"], "title": d["title"], "tags": d["tags"]}
+        for d in docs_payload
+    ]
+    phase1_payload = json.dumps(
+        {"tag_taxonomy": tag_taxonomy, "docs": lightweight_docs},
+        ensure_ascii=False,
+    )
+    print(f"  Phase 1 payload: {len(phase1_payload):,} chars ({len(lightweight_docs)} docs)")
+
+    hub_system_prompt = HUB_DESIGN_SYSTEM_PROMPT.format(
         max_hubs=args.max_hubs,
         max_depth=args.max_depth,
     )
-    client = get_openai_client()
-    plan = call_model(
+    hub_result = call_model(
         client,
         args.model,
-        system_prompt,
-        "Return ONLY valid JSON. Here is the curated tag taxonomy and document summaries:\n"
-        f"{payload_json}\n\nRemember: respond with JSON only.",
+        hub_system_prompt,
+        "Return ONLY valid JSON. Design the hub structure (with subdirs) for these documents.\n"
+        f"{phase1_payload}\n\nReturn JSON with just the 'hubs' key.",
         stream=not args.no_stream,
     )
+    hubs = hub_result.get("hubs", [])
+    print(f"Phase 1 complete: {len(hubs)} hubs designed.\n")
+
+    # --- Phase 2: Assign docs to hubs in batches ---
+    batches = batch_docs(docs_payload, args.max_batch_chars)
+    print(f"Phase 2: Assigning {len(docs_payload)} docs in {len(batches)} batch(es)...")
+
+    doc_assign_prompt = DOC_ASSIGN_SYSTEM_PROMPT.format()
+    hub_context_json = json.dumps({"hubs": hubs, "tag_taxonomy": tag_taxonomy}, ensure_ascii=False)
+    all_doc_assignments: list[dict] = []
+
+    for i, batch in enumerate(batches):
+        print(f"\n--- Batch {i+1}/{len(batches)} ({len(batch)} docs) ---")
+        batch_payload = json.dumps(
+            {"hubs": hubs, "tag_taxonomy": tag_taxonomy, "docs": batch},
+            ensure_ascii=False,
+        )
+        batch_result = call_model(
+            client,
+            args.model,
+            doc_assign_prompt,
+            "Return ONLY valid JSON. Assign each document to hubs and propose new paths.\n"
+            f"{batch_payload}\n\nReturn JSON with just the 'docs' key.",
+            stream=not args.no_stream,
+        )
+        all_doc_assignments.extend(batch_result.get("docs", []))
+
+    plan = {"hubs": hubs, "docs": all_doc_assignments}
 
     # Ensure final tags exactly match the curated tag plan
     for doc in plan.get("docs", []):
@@ -431,6 +527,9 @@ def main() -> None:
             "max_depth": args.max_depth,
             "original_tag_count": tag_plan.get("meta", {}).get("original_tag_count"),
             "final_unique_tags": len(tag_plan.get("tags", [])),
+            "batches": len(batches),
+            "docs_returned": len(all_doc_assignments),
+            "docs_expected": len(docs_payload),
         }
     )
 
