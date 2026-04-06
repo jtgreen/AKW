@@ -202,7 +202,10 @@ python3 run_cleanup.py
 
 For adding a few new PDFs without triggering a full re-org or re-tag. Summarizes, classifies into existing hubs/tags, creates wiki markdown, uploads PDF, and upserts to vector store — all in one command.
 
-**Prereqs:** `config.yaml` must exist (created during server setup) with `wiki_repo_root` and `openai.vector_store_id`. The organizer must have been run at least once (so tag/hub artifacts exist).
+**Prereqs:**
+- `WIKI_NAME` must be set in your `.env` (e.g., `WIKI_NAME=aristotelian-ai`). This is used to find organizer artifacts, build SCP paths, and name the wiki in classification prompts.
+- Either `config.yaml` exists with `wiki_repo_root` and `openai.vector_store_id`, or those values are passed via CLI flags / env vars (`WIKI_REPO_ROOT`, `OPENAI_VECTOR_STORE_ID`).
+- The organizer must have been run at least once (so tag/hub artifacts exist for classification).
 
 ### Usage
 
@@ -354,11 +357,55 @@ cd /path/to/wiki-repo && git add -A && git commit -m "reorg: full re-tag and reo
 # 5. Rebuild vector store
 cd /path/to/monorepo/indexer
 python3 indexer_stub.py --force-clear
+
+# 6. Reset Wiki.js (run on server after git push)
+python3 /opt/<repo-dir>/scripts/reset_wikijs.py
+# Then: Admin → Storage → Git → Force Sync
+# Then: Admin → Utilities → Content → Rerender All Pages
 ```
 
 ---
 
-## 10) Security & ops notes
+## 10) Resetting Wiki.js after reorganization
+
+After a full re-org, Wiki.js will have stale pages (old paths) and orphaned tags. The `scripts/reset_wikijs.py` script clears Wiki.js via its GraphQL API, then Wiki.js re-imports everything cleanly from git.
+
+**Prereqs:**
+- Wiki.js API key: generate at Admin → API Access → New API Key
+- Set `WIKIJS_API_KEY` in your server `.env`, or pass via `--api-key`
+
+**Run on the server** after git has been pushed/pulled:
+
+```bash
+# Preview what will be deleted
+python3 /opt/<repo-dir>/scripts/reset_wikijs.py --dry-run
+
+# Delete all pages (Wiki.js re-imports from git on next sync)
+python3 /opt/<repo-dir>/scripts/reset_wikijs.py
+
+# Keep home page
+python3 /opt/<repo-dir>/scripts/reset_wikijs.py --skip-home
+```
+
+After the script runs:
+1. Wiki.js auto-syncs from git within 5 minutes, or force it: Admin → Storage → Git → Force Sync
+2. Rerender all pages: Admin → Utilities → Content → Rerender All Pages
+3. Verify pages and tags look correct
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--wiki-url URL` | Wiki.js base URL (default: from `WIKI_BASE_URL` or `DOMAIN` env) |
+| `--api-key KEY` | Wiki.js API key (default: from `WIKIJS_API_KEY` env) |
+| `--dry-run` | List pages without deleting |
+| `--skip-home` | Keep the home page |
+| `--batch-size N` | Pages per batch before progress update (default: 50) |
+| `--delay SECS` | Pause between deletes (default: 0.1s) |
+
+---
+
+## 11) Security & ops notes
 
 - Rotate any OpenAI keys that were ever committed.
 - Keep secrets in `.env` files (not committed).
@@ -367,7 +414,7 @@ python3 indexer_stub.py --force-clear
 
 ---
 
-## 11) Wiki.js setup notes
+## 12) Wiki.js setup notes
 
 On the server:
 ```bash
