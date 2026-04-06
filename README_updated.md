@@ -15,6 +15,8 @@ Repo layout:
 │   │   ├── checksum_utils.py
 │   │   ├── backfill_checksums.py
 │   │   └── run_cleanup.py
+│   ├── quick_ingest/      # Lightweight single/small-batch PDF ingest
+│   │   └── quick_ingest.py
 │   ├── organizer/         # LLM-driven wiki reorganization & tagging
 │   │   ├── build_catalog.py
 │   │   ├── plan_tags.py
@@ -196,7 +198,65 @@ python3 run_cleanup.py
 
 ---
 
-## 7) Wiki organizer (LLM-driven re-tagging & reorganization)
+## 7) Quick ingest (single PDF or small batch)
+
+For adding a few new PDFs without triggering a full re-org or re-tag. Summarizes, classifies into existing hubs/tags, creates wiki markdown, uploads PDF, and upserts to vector store — all in one command.
+
+**Prereqs:** `config.yaml` must exist (created during server setup) with `wiki_repo_root` and `openai.vector_store_id`. The organizer must have been run at least once (so tag/hub artifacts exist).
+
+### Usage
+
+```bash
+cd indexer/quick_ingest
+
+# Single PDF
+python3 quick_ingest.py ~/paper.pdf --wiki-root ~/Dev/my-wiki
+
+# Directory of PDFs
+python3 quick_ingest.py ~/new-papers/ --wiki-root ~/Dev/my-wiki
+
+# Dry run (preview classification without writing)
+python3 quick_ingest.py ~/paper.pdf --wiki-root ~/Dev/my-wiki --dry-run
+
+# With auto git commit + push
+python3 quick_ingest.py ~/new-papers/ --wiki-root ~/Dev/my-wiki --git-commit
+
+# Skip vector store (just create markdown + upload PDF)
+python3 quick_ingest.py ~/paper.pdf --wiki-root ~/Dev/my-wiki --no-vector-store
+
+# Skip SCP upload (local only)
+python3 quick_ingest.py ~/paper.pdf --wiki-root ~/Dev/my-wiki --no-scp
+```
+
+### How it works
+
+For each PDF:
+1. **Checksum dedup** — skips PDFs already in `checksum.log`
+2. **Summarize** — calls `ingest_paper.py --dry-run --print-json` to extract title, tags, key points
+3. **Classify** — LLM picks the best hub/subdir + tags from existing options (uses organizer artifacts when available, falls back to filesystem scan)
+4. **Ingest** — calls `ingest_paper.py` with `--base-dir` set to the classified directory, uploads PDF via SCP
+5. **Update front matter** — sets path/slug/tags to match classified location
+6. **Vector store upsert** — uploads markdown + PDF text so Ask can cite it immediately
+7. **Record checksum** — prevents re-processing on next run
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--wiki-root PATH` | Wiki content repo (default: from config.yaml) |
+| `--config PATH` | Path to config.yaml (default: indexer/config.yaml) |
+| `--model MODEL` | OpenAI model for classification (default: gpt-5.1) |
+| `--max-tags N` | Max tags per document (default: 5) |
+| `--dry-run` | Preview classification without writing files |
+| `--git-commit` | Auto git add/commit/push after success |
+| `--deduplicate` | Skip if vector store similarity > 0.9 |
+| `--no-vector-store` | Skip vector store upsert |
+| `--no-scp` | Skip PDF upload via SCP |
+| `--verbose` | Print detailed progress |
+
+---
+
+## 8) Wiki organizer (LLM-driven re-tagging & reorganization)
 
 Scripts in `indexer/organizer/`. These scan the wiki, normalize tags, design a hub/directory structure, and apply it.
 
@@ -265,7 +325,7 @@ For a wiki with ~1400 docs, `--max-batch-docs 150` produces ~10 batches. Each ba
 
 ---
 
-## 8) End-to-end workflow: ingest + reorg + vectorize
+## 9) End-to-end workflow: ingest + reorg + vectorize
 
 ```bash
 # 1. Batch ingest new PDFs
@@ -298,7 +358,7 @@ python3 indexer_stub.py --force-clear
 
 ---
 
-## 9) Security & ops notes
+## 10) Security & ops notes
 
 - Rotate any OpenAI keys that were ever committed.
 - Keep secrets in `.env` files (not committed).
@@ -307,7 +367,7 @@ python3 indexer_stub.py --force-clear
 
 ---
 
-## 10) Wiki.js setup notes
+## 11) Wiki.js setup notes
 
 On the server:
 ```bash
