@@ -111,7 +111,9 @@ def graphql(url: str, api_key: str, query: str, variables: dict = None) -> dict:
         payload["variables"] = variables
 
     resp = requests.post(f"{url}/graphql", headers=headers, json=payload, timeout=30)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        print(f"  HTTP {resp.status_code}: {resp.text[:500]}")
+        resp.raise_for_status()
     data = resp.json()
 
     if "errors" in data:
