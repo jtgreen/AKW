@@ -41,11 +41,14 @@ except ImportError:
 # Try to load .env from common locations
 try:
     from dotenv import load_dotenv
-    for env_path in [
+    wiki_name = (os.getenv("WIKI_NAME") or "my-wiki").strip()
+    env_candidates = [
+        Path(f"/opt/{wiki_name}-stack/.env"),
+        Path(f"/opt/{wiki_name}-indexer/.env"),
         Path(__file__).resolve().parent.parent / "indexer" / ".env",
         Path(__file__).resolve().parent.parent / "indexer" / "client_ingest" / ".env",
-        Path("/opt") / (os.getenv("WIKI_NAME") or "my-wiki") + "-stack" / ".env",
-    ]:
+    ]
+    for env_path in env_candidates:
         if env_path.exists():
             load_dotenv(env_path, override=False)
 except Exception:
