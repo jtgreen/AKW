@@ -132,9 +132,7 @@ def list_all_pages(url: str, api_key: str) -> List[dict]:
           id
           path
           title
-          tags {
-            tag
-          }
+          tags
         }
       }
     }
@@ -208,7 +206,7 @@ def main() -> None:
     if args.dry_run:
         print("\nDry run — pages that would be deleted:")
         for p in pages:
-            tags = [t["tag"] for t in (p.get("tags") or [])]
+            tags = p.get("tags") or []
             tag_str = f" [{', '.join(tags)}]" if tags else ""
             print(f"  [{p['id']}] {p['path']}{tag_str}")
         print(f"\nTotal: {len(pages)} pages. Re-run without --dry-run to delete.")
